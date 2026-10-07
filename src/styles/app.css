@@ -1,0 +1,188 @@
+@import './tokens.css';
+@import './components.css';
+@import './layout.css';
+
+/* --- CONTEXT HEADER --- */
+.student-greeting-date {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-greeting-name {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+
+.student-greeting-sub {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* --- THE MASTER PROMPT LAYOUT (Linear Sections) --- */
+.prompt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.prompt-section-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 0.75rem;
+}
+
+.prompt-section-link {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.prompt-section-link:hover {
+  color: var(--text-primary);
+}
+
+/* Item block */
+.prompt-item-block {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.prompt-item-block:hover {
+  border-color: var(--border-card);
+  background: var(--bg-hover);
+}
+
+.prompt-time-label {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.prompt-title-large {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin-top: 0.15rem;
+}
+
+.prompt-meta-text {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+/* Attendance Big Metric */
+.attendance-big-num {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* Timeline */
+.stream-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.stream-spine {
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.5rem;
+  width: 1px;
+  background: var(--border-subtle);
+}
+
+.stream-node {
+  position: absolute;
+  left: -1.75rem;
+  top: 1rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg-canvas);
+  border: 1.5px solid var(--border-strong);
+}
+
+.stream-node-active {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+}
+
+.stream-node-done {
+  border-color: var(--state-success);
+  background: var(--state-success);
+}
+
+/* Offline Notice */
+.offline-banner {
+  background: var(--state-warning-bg);
+  border-bottom: 1px solid var(--state-warning-border);
+  color: var(--state-warning);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-canvas);
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.25rem !important;
+  }
+
+  .login-demo-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

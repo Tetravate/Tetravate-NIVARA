@@ -1,0 +1,138 @@
+/* CAMPUS by Tetravate — Design Tokens (Linear & Notion Inspired Minimalist System) */
+
+:root {
+  /* Canvas & Background Surfaces */
+  --bg-app: #FFFFFF;
+  --bg-canvas: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-subtle: #F7F8F9;
+  --bg-subtle-2: #F0F2F5;
+  --bg-hover: #F2F4F7;
+  --bg-active: #E9ECEF;
+
+  /* Typography Colors */
+  --text-primary: #121417;
+  --text-secondary: #475467;
+  --text-muted: #667085;
+  --text-tertiary: #98A2B3;
+  --text-inverse: #FFFFFF;
+
+  /* Hairline Dividers & Borders (Clean, ultra-delicate 1px lines) */
+  --border-subtle: #EAECF0;
+  --border-card: #E4E7EC;
+  --border-strong: #D0D5DD;
+  --border-focus: #121417;
+
+  /* Brand Accents (Linear Obsidian & Academic Cobalt) */
+  --brand-primary: #121417;
+  --brand-hover: #1D2939;
+  --brand-blue: #026AA2;
+  --brand-blue-hover: #005585;
+  --brand-blue-subtle: #F0F9FF;
+  --brand-blue-border: #B9E6FE;
+
+  /* Status Tokens (Calm, understated, never aggressive) */
+  --state-success: #027A48;
+  --state-success-bg: #ECFDF3;
+  --state-success-border: #A6F4C5;
+
+  --state-warning: #B54708;
+  --state-warning-bg: #FFFAEB;
+  --state-warning-border: #FEDF89;
+
+  --state-urgent: #B42318;
+  --state-urgent-bg: #FEF3F2;
+  --state-urgent-border: #FECDCA;
+
+  --state-info: #026AA2;
+  --state-info-bg: #F0F9FF;
+  --state-info-border: #B9E6FE;
+
+  /* Fonts */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Geometry & Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Elevation (Whisper-soft diffused ambient shadows) */
+  --shadow-subtle: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+  --shadow-elevated: 0 4px 16px -2px rgba(16, 24, 40, 0.06), 0 2px 6px -1px rgba(16, 24, 40, 0.04);
+  --shadow-modal: 0 20px 48px -8px rgba(16, 24, 40, 0.14), 0 4px 12px rgba(16, 24, 40, 0.06);
+
+  /* Micro-Motion */
+  --transition-fast: 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Contextual Workspace Widths (Prompt 3 Architecture) */
+  --workspace-reading: 800px;
+  --workspace-normal: 1200px;
+  --workspace-dense: 1440px;
+  --workspace-wide: 1680px;
+}
+
+[data-theme="dark"] {
+  /* Dark Mode Palette (Linear Dark Aesthetic) */
+  --bg-app: #0C0E12;
+  --bg-canvas: #0C0E12;
+  --bg-surface: #13161B;
+  --bg-surface-elevated: #181C24;
+  --bg-subtle: #181B22;
+  --bg-subtle-2: #212631;
+  --bg-hover: #222733;
+  --bg-active: #2C3342;
+
+  --text-primary: #F7F8F9;
+  --text-secondary: #CECFD2;
+  --text-muted: #94969C;
+  --text-tertiary: #667085;
+  --text-inverse: #0C0E12;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-card: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-focus: #FFFFFF;
+
+  --brand-primary: #F7F8F9;
+  --brand-hover: #E4E7EC;
+  --brand-blue: #38BDF8;
+  --brand-blue-hover: #7DD3FC;
+  --brand-blue-subtle: rgba(56, 189, 248, 0.10);
+  --brand-blue-border: rgba(56, 189, 248, 0.25);
+
+  --state-success: #32D583;
+  --state-success-bg: rgba(50, 213, 131, 0.10);
+  --state-success-border: rgba(50, 213, 131, 0.22);
+
+  --state-warning: #FDB022;
+  --state-warning-bg: rgba(253, 176, 34, 0.10);
+  --state-warning-border: rgba(253, 176, 34, 0.22);
+
+  --state-urgent: #F97066;
+  --state-urgent-bg: rgba(249, 112, 102, 0.10);
+  --state-urgent-border: rgba(249, 112, 102, 0.22);
+
+  --state-info: #38BDF8;
+  --state-info-bg: rgba(56, 189, 248, 0.10);
+  --state-info-border: rgba(56, 189, 248, 0.22);
+
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
