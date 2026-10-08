@@ -13,7 +13,8 @@ export default function ProfileModal() {
     showToast,
   } = useNivara();
 
-  const currentStudent = (students || []).find((s) => s.id === '2024-AIDS-042') || (students || [])[0] || {};
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+  const currentStudent = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
   const isStudent = currentRole === 'student';
 
   const [name, setName] = useState(() => (isStudent ? currentStudent?.name || '' : currentUser?.userName || ''));

@@ -2444,20 +2444,22 @@ export function NivaraProvider({ children }) {
 
   // User Profile Updates
   const updateUserProfile = (profileData) => {
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
     setStudents((prev) =>
-      prev.map((s) => (s.id === '2024-AIDS-042' ? { ...s, ...profileData } : s))
+      prev.map((s) => (s.id === activeStudentId || s.email === currentUser?.email ? { ...s, ...profileData } : s))
     );
     showToast('Profile credentials updated successfully ✓', 'success');
   };
 
   // Revaluation Workflow
   const submitRevaluationRequest = async (revalData) => {
-    const student = (students || []).find((s) => s.id === '2024-AIDS-042') || (students || [])[0] || {};
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+    const student = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
     const newReq = {
       id: `rev-${Date.now()}`,
-      studentId: revalData.studentId || student.id || '2024-AIDS-042',
-      rollNo: revalData.rollNo || student.rollNo || '22AIDS042',
-      studentName: revalData.studentName || student.name || 'Aadhi Narayanan',
+      studentId: student.id || activeStudentId,
+      rollNo: student.rollNo || '22AIDS042',
+      studentName: student.name || currentUser?.userName || 'Aadhi Narayanan',
       courseCode: revalData.courseCode,
       subjectName: revalData.subjectName,
       semester: Number(revalData.semester) || 4,

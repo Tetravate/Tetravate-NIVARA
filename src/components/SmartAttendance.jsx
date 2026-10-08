@@ -30,6 +30,32 @@ export default function SmartAttendance({ onBack }) {
   const [missCount, setMissCount] = useState(1);
   const [attendCount, setAttendCount] = useState(0);
 
+  // Attendance History State
+  const [historySubject, setHistorySubject] = useState('ALL');
+  const [historyStatus, setHistoryStatus] = useState('ALL');
+
+  // Chronological attendance roster records for the active student
+  const attendanceHistoryRecords = [
+    { id: 'att-log-1', date: '07 Oct 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
+    { id: 'att-log-2', date: '06 Oct 2026', time: '02:00 PM – 03:30 PM', code: 'CS304', subject: 'Database Management Systems', faculty: 'Dr. K. Mohan', room: 'Room B104', status: 'present' },
+    { id: 'att-log-3', date: '06 Oct 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'absent' },
+    { id: 'att-log-4', date: '05 Oct 2026', time: '08:30 AM – 10:00 AM', code: 'MA301', subject: 'Discrete Structures', faculty: 'Prof. S. Venkatesh', room: 'Room A204', status: 'present' },
+    { id: 'att-log-5', date: '03 Oct 2026', time: '02:00 PM – 04:00 PM', code: 'AI302', subject: 'Machine Learning Foundations Lab', faculty: 'Dr. Rajesh K.', room: 'AI Lab 1', status: 'present' },
+    { id: 'att-log-6', date: '02 Oct 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'on_duty' },
+    { id: 'att-log-7', date: '01 Oct 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
+    { id: 'att-log-8', date: '30 Sep 2026', time: '02:00 PM – 03:30 PM', code: 'CS304', subject: 'Database Management Systems', faculty: 'Dr. K. Mohan', room: 'Room B104', status: 'present' },
+    { id: 'att-log-9', date: '29 Sep 2026', time: '08:30 AM – 10:00 AM', code: 'MA301', subject: 'Discrete Structures', faculty: 'Prof. S. Venkatesh', room: 'Room A204', status: 'present' },
+    { id: 'att-log-10', date: '26 Sep 2026', time: '02:00 PM – 04:00 PM', code: 'AI302', subject: 'Machine Learning Foundations Lab', faculty: 'Dr. Rajesh K.', room: 'AI Lab 1', status: 'present' },
+    { id: 'att-log-11', date: '25 Sep 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'absent' },
+    { id: 'att-log-12', date: '24 Sep 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
+  ];
+
+  const filteredHistory = attendanceHistoryRecords.filter((rec) => {
+    if (historySubject !== 'ALL' && rec.code !== historySubject) return false;
+    if (historyStatus !== 'ALL' && rec.status !== historyStatus) return false;
+    return true;
+  });
+
   const selectedSubject =
     coursesAttendance.find((c) => c.code === selectedCourseCode) || coursesAttendance[0];
 
@@ -297,6 +323,115 @@ export default function SmartAttendance({ onBack }) {
           </div>
         </section>
       )}
+
+      {/* 5. Chronological Attendance History Log (Read-Only) */}
+      <section>
+        <SectionHeader
+          title="Attendance History Ledger"
+          subtitle="Chronological roster logs verified by faculty · Student Read-Only"
+          action={
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+              <select
+                className="input input-sm"
+                value={historySubject}
+                onChange={(e) => setHistorySubject(e.target.value)}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', height: '30px' }}
+                aria-label="Filter attendance history by subject"
+              >
+                <option value="ALL">All Subjects</option>
+                {coursesAttendance.map((c) => (
+                  <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+                ))}
+              </select>
+
+              <select
+                className="input input-sm"
+                value={historyStatus}
+                onChange={(e) => setHistoryStatus(e.target.value)}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', height: '30px' }}
+                aria-label="Filter attendance history by status"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="present">Present Only</option>
+                <option value="absent">Absences Only</option>
+                <option value="on_duty">On-Duty Leaves</option>
+              </select>
+            </div>
+          }
+        />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {filteredHistory.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title="No attendance entries match filter"
+              description="No classroom attendance records found for the selected subject and status filter."
+            />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: 'date',
+                  label: 'Date & Time Slot',
+                  width: '180px',
+                  render: (row) => (
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.date}</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>{row.time}</div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'subject',
+                  label: 'Subject & Course Code',
+                  render: (row) => (
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.subject}</div>
+                      <div style={{ fontSize: '0.71875rem', color: 'var(--text-muted)' }}>
+                        <code style={{ fontFamily: 'var(--font-mono)' }}>{row.code}</code> · Venue: {row.room}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'faculty',
+                  label: 'Faculty Evaluator',
+                  render: (row) => <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{row.faculty}</span>,
+                },
+                {
+                  key: 'status',
+                  label: 'Roster Standing',
+                  align: 'right',
+                  width: '140px',
+                  render: (row) => {
+                    if (row.status === 'present') {
+                      return (
+                        <span className="badge badge-success">
+                          <CheckCircle2 size={11} /> Present
+                        </span>
+                      );
+                    }
+                    if (row.status === 'on_duty') {
+                      return (
+                        <span className="badge badge-info" title="Official duty leave attendance concession credited">
+                          <ShieldCheck size={11} /> On-Duty Credit
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="badge badge-urgent">
+                        <AlertCircle size={11} /> Absent
+                      </span>
+                    );
+                  },
+                },
+              ]}
+              data={filteredHistory}
+              keyField="id"
+            />
+          )}
+        </div>
+      </section>
     </div>
   );
 }

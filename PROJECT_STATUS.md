@@ -96,26 +96,64 @@ Nivara has undergone significant re-architecture to transition from a static das
   - Placement drive eligibility check and 1-click application
   - Duty leave application with HOD concurrence status
   - Empty states for transactions, drives, and leaves
-- [x] **Faculty Dashboard** ([`src/components/roles/FacultyDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/FacultyDashboard.jsx))
-  - Rapid attendance toggling (Mark all present / absent / individual toggle)
-  - Create assignment modal & grading queue modal
-  - Continuous Internal Assessment (CIA) marks entry
-  - Duty leave recommendation/approval
-  - Study resources upload & class broadcast notice
+- [x] **Faculty Role Module (Prompt 5 Complete)** ([`src/components/roles/FacultyDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/FacultyDashboard.jsx))
+  - Full modular implementation across all 12 established primary modules:
+    1. **Faculty Home** (`FacultyHome.jsx`): Operational workspace with Today, Needs Action, and Upcoming queues.
+    2. **Today's Schedule** (`FacultyTodaySchedule.jsx`): Chronological teaching schedule, weekday switcher, live session indicators, office hours, and holiday mode.
+    3. **My Classes** (`FacultyClasses.jsx`): Assigned teaching cohorts (`CS301`, `AI302`, `AI308`), enrolled student counts, workload metrics, and direct operations quick-bar.
+    4. **Attendance** (`FacultyAttendance.jsx`): Cohort & session slot selector, rapid roll call (all present/absent/toggle), low-attendance warnings, duplicate prevention, and past register history.
+    5. **Assignments** (`FacultyAssignments.jsx`): Problem set creator modal, deliverable briefs, submission tracking, and focused grading queue modal with rubric feedback.
+    6. **Courses & Materials** (`FacultyMaterials.jsx`): Courseware distribution across lecture slides, lab manuals, and cheatsheets with realistic cloud URL publication.
+    7. **Assessments & Marks** (`FacultyMarks.jsx`): Continuous Internal Assessment (CIA) moderation table, numeric validation (0-25), draft saves, and Exam Cell lock protection.
+    8. **Students** (`FacultyStudents.jsx`): Authorized cohort directory (`AIDS-A` / `AIDS-B`), academic standing filters, and student academic dossier modal.
+    9. **Student Progress** (`FacultyStudentProgress.jsx`): Deterministic rule-based attention queue (attendance <75%, missing work, low CIA) with targeted remediation actions.
+    10. **Leave Requests** (`FacultyLeaves.jsx`): Student on-duty and medical leave review with concurrence endorsement and automatic attendance concession bonus.
+    11. **Announcements** (`FacultyAnnouncements.jsx`): Scoped class notice dispatcher with target section controls and published circulars audit trail.
+    12. **Timetable** (`FacultyTimetable.jsx`): Master weekly teaching matrix on desktop with responsive day-card transformation on mobile.
 - [x] **HOD Dashboard** ([`src/components/roles/HODDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/HODDashboard.jsx))
-  - Department vital statistics (attendance, at-risk count, workload)
-  - At-risk student alert & academic counseling notice dispatch
-  - Student duty leave concurrence (automatically applies attendance concession)
-  - Department circular broadcast
+  - Full modular implementation across all 12 established primary modules scoped to Department of AI & Data Science (`AIDS`):
+    1. **HOD Home** (`HODHome.jsx`): Department health vitals, critical queues (defaulters, pending leaves), lecture session tracking, and direct circular dispatcher.
+    2. **Department Overview** (`HODOverview.jsx`): Accredited degree programs (B.Tech & M.Tech), intake capacity, active cohort sections, and specialized research facilities.
+    3. **Students** (`HODStudents.jsx`): Department-wide student directory, standing & cohort filters, CGPA distribution, and detailed academic dossier modal.
+    4. **Faculty** (`HODFaculty.jsx`): Department instructional staff profiles, designations, teaching loads, student feedback ratings, and teaching context inspector.
+    5. **Attendance** (`HODAttendance.jsx`): Departmental attendance analytics across all active course codes, cohort averages, and attendance defaulter roll call (<75%).
+    6. **Academic Performance** (`HODAcademicPerformance.jsx`): CIA assessment moderation, draft vs locked status, pass/fail indicators, and grade distribution analysis.
+    7. **At-Risk Students** (`HODAtRisk.jsx`): Deterministic multi-factor risk radar (attendance <75%, backlogs, low CIA), parent alert logging, and counseling directive issuance.
+    8. **Faculty Workload** (`HODWorkload.jsx`): Teaching hours vs UGC 18h statutory limit, course theory/lab breakdown, and department load distribution.
+    9. **Timetable** (`HODTimetable.jsx`): Department master weekly timetable grid, section-wise filters, room collision inspection, and read-only schedule auditing.
+    10. **Approvals** (`HODApprovals.jsx`): Student on-duty and medical leave queue with one-click sanction and automatic +1.5x day attendance concession bonus.
+    11. **Announcements** (`HODAnnouncements.jsx`): Departmental circular composer with target audience targeting (entire dept vs specific cohorts) and published archive.
+    12. **Reports** (`HODReports.jsx`): Official department audit reporting engine with live tabular dataset preview, criteria filters, and verified CSV export.
 - [x] **Principal / Dean Dashboard** ([`src/components/roles/PrincipalDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/PrincipalDashboard.jsx))
-  - Executive college KPIs (total students, college-wide attendance, fee recovery rate, at-risk count)
-  - 5-department comparison matrix with drilldown modal
-  - College-wide directive broadcast
+  - Full modular implementation across all 13 established primary modules for Executive Council oversight:
+    1. **Executive Home** (`PrincipalHome.jsx`): Institution health vitals (enrollment, attendance, fee recovery, risk count), milestone notifications, department performance matrix, fee recovery radar, active corporate recruitment radar, items needing attention, and directive broadcaster.
+    2. **College Overview** (`PrincipalOverview.jsx`): Autonomous governance snapshot, student-faculty ratios (1:14), degree programs (B.Tech & M.Tech), division breakdown, and accreditation standing (NBA Tier-1, NAAC A++ 3.71 CGPA).
+    3. **Departments** (`PrincipalDepartments.jsx`): Cross-department comparative matrix across all 5 engineering branches (`AIDS`, `CSE`, `ECE`, `MECH`, `CIVIL`), HOD leadership, and detailed read-only branch inspector modal.
+    4. **Students** (`PrincipalStudents.jsx`): Institution-wide read-only student directory, roll identifier search, branch and standing filters, and detailed Academic Transcript Dossier inspector modal.
+    5. **Faculty** (`PrincipalFaculty.jsx`): Institution-wide instructional faculty roster, teaching loads, UGC 18h compliance, student feedback ratings, and instructional profile inspector.
+    6. **Academic Performance** (`PrincipalAcademicPerformance.jsx`): Continuous assessment pass rates, grading distribution ($S, A, B, C, U$), branch comparisons, and deterministic remedial attention queue.
+    7. **Attendance** (`PrincipalAttendance.jsx`): Institution-wide attendance analytics, subject roll calls, branch averages, and statutory condonation defaulters queue (<75%).
+    8. **Examinations & Results** (`PrincipalExamsResults.jsx`): Central Examination Cell calendar schedules, hall allocations, and official published Semester Result Gazette.
+    9. **Placements** (`PrincipalPlacements.jsx`): Career Development Center placement radar, corporate campus drives, package compensation (CTC LPA), and branch conversion tracking.
+    10. **Finance** (`PrincipalFinance.jsx`): Institutional fee recovery radar, tuition billing vs realized collections, outstanding balances, and verified transaction ledgers.
+    11. **Approvals** (`PrincipalApprovals.jsx`): Executive Council statutory review and concurrence queue for duty leave waivers, medical condonations, and faculty development petitions with one-click sanction.
+    12. **Announcements** (`PrincipalAnnouncements.jsx`): Official administrative directive composer with target audience controls (institution, students, faculty, HODs) and published directives archive.
+    13. **Reports** (`PrincipalReports.jsx`): Institutional accreditation and governance reporting engine with live tabular dataset preview, criteria filters, and verified CSV export.
 - [x] **ERP Administrator Dashboard** ([`src/components/roles/AdminDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/AdminDashboard.jsx))
-  - Add Department modal & master division manager
-  - Room conflict reallocation modal & schedule resolution
-  - User RBAC manager (add user, toggle active/suspended, filter by role)
-  - System configuration settings (semester dates, attendance cutoff, grading scales)
+  - Full modular implementation across all 13 established primary modules for institutional master data controller:
+    1. **Admin Home** (`AdminHome.jsx`): System vital signs (identities, divisions, collisions, audit ledger), needs attention queue, global policies summary, and recent audit activity.
+    2. **Users & Roles** (`AdminUsers.jsx`): Institutional RBAC identity directory, 8 canonical personas (`student`, `faculty`, `hod`, `principal`, `admin`, `exam_cell`, `finance`, `placement`), user creation modal, and instant account suspension/activation toggles.
+    3. **Students** (`AdminStudents.jsx`): Student master data management, search, division filters, and new student master enrollment modal.
+    4. **Faculty** (`AdminFaculty.jsx`): Faculty appointments master, designation filters, weekly teaching load ceilings, and instructional appointment modal.
+    5. **Departments** (`AdminDepartments.jsx`): Master division manager, code chartering, HOD appointed mapping, intake allocations, and dependency checks.
+    6. **Programs & Courses** (`AdminPrograms.jsx`): Degree hierarchy manager (B.Tech 4-Year UG, M.Tech 2-Year PG), department affiliations, and degree chartering.
+    7. **Subjects** (`AdminSubjects.jsx`): Curriculum subject master catalog, semester credit schemes, and Lecture-Tutorial-Practical (L-T-P) course allocations.
+    8. **Classes & Sections** (`AdminSections.jsx`): Class section administration (`AIDS-A-SEM5`, `AIDS-B-SEM5`, etc.), room assignments, and class mentor mappings.
+    9. **Timetable & Rooms** (`AdminTimetableRooms.jsx`): Campus infrastructure schedule collision detection, room inventory, and instant reallocation arbitration modal.
+    10. **Academic Years** (`AdminAcademicYears.jsx`): Academic calendar sessions master, term boundary dates, and single-active-year regulation enforcement.
+    11. **System Configuration** (`AdminSystemConfig.jsx`): Global parameter engine (academic term, mandatory attendance threshold 75%, CIA passing cutoff 50%, fee grace days).
+    12. **Announcements** (`AdminAnnouncements.jsx`): Operational maintenance and system notices dispatcher with target audience controls.
+    13. **Audit Logs** (`AdminAuditLogs.jsx`): Tamper-evident institutional audit trail, actor and action code filters, event detail inspection, and CSV export.
 - [x] **Exam Cell Dashboard** ([`src/components/roles/ExamCellDashboard.jsx`](file:///c:/Users/aswin/OneDrive/Documents/Nivara-Tetravate/src/components/roles/ExamCellDashboard.jsx))
   - Scheduled assessment calendar
   - Seating roster inspection modal

@@ -9,6 +9,7 @@ import {
 export default function MobileBottomNav({ onOpenCaseStudy: _onOpenCaseStudy }) {
   const {
     currentRole,
+    currentUser,
     activeTab,
     setActiveTab,
     students,
@@ -20,8 +21,12 @@ export default function MobileBottomNav({ onOpenCaseStudy: _onOpenCaseStudy }) {
 
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
-  const currentStudent = (students || []).find((s) => s.id === '2024-AIDS-042') || (students || [])[0] || {};
-  const pendingAssignmentsCount = (assignments || []).filter((a) => !a.completed).length;
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+  const currentStudent = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+  const pendingAssignmentsCount = (assignments || []).filter((a) => {
+    const isSubmitted = (a.submissions || []).some((sub) => sub.studentId === activeStudentId && (sub.status === 'submitted' || sub.status === 'graded'));
+    return !a.completed && !isSubmitted;
+  }).length;
   const pendingLeavesCount = (leaveRequests || []).filter((l) => l.status === 'pending').length;
   const atRiskCount = (students || []).filter(
     (s) => s.deptCode === 'AIDS' && (s.attendancePct < 75 || s.backlogs > 0)

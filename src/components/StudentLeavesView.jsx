@@ -96,6 +96,21 @@ export default function StudentLeavesView({ onBack }) {
       return;
     }
 
+    // Validate duplicate or overlapping leave dates for the active student
+    const hasConflict = studentLeaves.some((l) => {
+      if (l.status === 'rejected') return false;
+      const startReq = new Date(leaveFormData.startDate).getTime();
+      const endReq = new Date(leaveFormData.endDate).getTime();
+      const startExist = new Date(l.startDate).getTime();
+      const endExist = new Date(l.endDate).getTime();
+      return startReq <= endExist && endReq >= startExist;
+    });
+
+    if (hasConflict) {
+      showToast('An active leave request already covers these dates. Please choose another date range.', 'warning');
+      return;
+    }
+
     submitLeaveRequest(leaveFormData);
     setLeaveModalOpen(false);
     setLeaveFormData({
@@ -219,9 +234,23 @@ export default function StudentLeavesView({ onBack }) {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '0.78125rem', color: 'var(--text-muted)' }}>
-                    Period: <strong>{leave.startDate}</strong> to <strong>{leave.endDate}</strong> · Reviewer: {leave.approvedBy || 'Dr. K. Mohan (HOD)'}
+                  <div style={{ fontSize: '0.78125rem', color: 'var(--text-muted)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                    <span>Period: <strong>{leave.startDate}</strong> to <strong>{leave.endDate}</strong></span>
+                    <span>•</span>
+                    <span>Submitted: {leave.submittedAt || 'Recorded'}</span>
+                    {leave.status !== 'pending' && (
+                      <>
+                        <span>•</span>
+                        <span>Reviewed by: <strong>{leave.approvedBy || 'Dr. K. Mohan (HOD)'}</strong></span>
+                      </>
+                    )}
                   </div>
+
+                  {leave.comment && (
+                    <div style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '0.35rem 0.6rem', borderRadius: 'var(--radius-xs)', borderLeft: '2px solid var(--brand-primary)' }}>
+                      <strong>Reviewer Remarks:</strong> {leave.comment}
+                    </div>
+                  )}
 
                   {leave.dutyAttendanceGranted && (
                     <div

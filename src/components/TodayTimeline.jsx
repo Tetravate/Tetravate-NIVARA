@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Clock,
   MapPin,
@@ -9,34 +9,82 @@ import {
   Sparkles,
   ArrowLeft,
   CalendarDays,
+  AlertCircle,
+  Sun,
 } from 'lucide-react';
 import { useNivara } from '../context/NivaraContext';
 import { PageHeader, SectionHeader, EmptyState } from './workspace';
 
 export default function TodayTimeline({ onBack }) {
   const { timetableEntries, setActiveTab } = useNivara();
+  const [selectedDay, setSelectedDay] = useState('Tuesday');
+  const [isHolidayMode, setIsHolidayMode] = useState(false);
 
-  // Today context (Tuesday in current semester academic week)
-  const currentDay = 'Tuesday';
-  const todayDateString = 'Tuesday · 7 October 2026';
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  // Filter entries for the current day and sort chronologically by startTime
-  const todayClasses = (timetableEntries || [])
-    .filter((entry) => entry.dayOfWeek === currentDay)
+  // Current semester academic week date mapping
+  const DAY_DATES = {
+    Monday: 'Monday · 6 October 2026',
+    Tuesday: 'Tuesday · 7 October 2026',
+    Wednesday: 'Wednesday · 8 October 2026',
+    Thursday: 'Thursday · 9 October 2026',
+    Friday: 'Friday · 10 October 2026',
+    Saturday: 'Saturday · 11 October 2026',
+  };
+
+  const todayDateString = DAY_DATES[selectedDay] || `${selectedDay} · Semester 5`;
+
+  // Loading & Error States
+  if (timetableEntries === undefined) {
+    return (
+      <div className="workspace-normal" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <PageHeader eyebrow="Academic Timetable Stream" title="Today's Schedule" description="Loading timetable entries..." />
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Clock size={24} className="pulse-dot" style={{ margin: '0 auto 0.75rem' }} />
+          <div>Synchronizing academic schedule from registry...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (timetableEntries === null) {
+    return (
+      <div className="workspace-normal" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <PageHeader eyebrow="Academic Timetable Stream" title="Today's Schedule" description="Schedule unavailable" />
+        <EmptyState
+          icon={AlertCircle}
+          title="Timetable Data Unavailable"
+          description="Could not load the institutional timetable service. Please verify network connectivity or check back shortly."
+          action={
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => window.location.reload()}>
+              Retry Connection
+            </button>
+          }
+        />
+      </div>
+    );
+  }
+
+  // Filter entries for the selected day and sort chronologically by startTime
+  const dayClasses = (timetableEntries || [])
+    .filter((entry) => entry.dayOfWeek === selectedDay)
     .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
   // Build the chronological schedule stream with lunch and free intervals
-  // 10:00 AM slot is currently in session for demo realism
   const enrichedStream = [];
 
-  if (todayClasses.length > 0) {
-    todayClasses.forEach((cls, idx) => {
-      // Determine session state relative to current simulated time (10:15 AM)
+  if (dayClasses.length > 0 && !isHolidayMode && selectedDay !== 'Saturday') {
+    dayClasses.forEach((cls, idx) => {
+      // Determine session state relative to current simulated time (10:15 AM on Tuesday)
       let status = 'upcoming';
-      if (cls.startTime < '10:00:00') {
+      if (selectedDay === 'Tuesday') {
+        if (cls.startTime < '10:00:00') {
+          status = 'attended';
+        } else if (cls.startTime <= '10:30:00' && cls.endTime >= '10:00:00') {
+          status = 'in-progress';
+        }
+      } else if (selectedDay === 'Monday') {
         status = 'attended';
-      } else if (cls.startTime <= '10:30:00' && cls.endTime >= '10:00:00') {
-        status = 'in-progress';
       }
 
       enrichedStream.push({
@@ -88,6 +136,15 @@ export default function TodayTimeline({ onBack }) {
         description="A calm chronological stream of your day across lectures, laboratory sessions, and study windows."
         actions={[
           <button
+            key="holiday-toggle"
+            type="button"
+            className={`btn btn-sm ${isHolidayMode ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setIsHolidayMode(!isHolidayMode)}
+            title="Toggle Institutional Holiday State"
+          >
+            <Sun size={13} /> {isHolidayMode ? 'Normal Day View' : 'Holiday State'}
+          </button>,
+          <button
             key="timetable"
             type="button"
             className="btn btn-secondary btn-sm"
@@ -108,19 +165,86 @@ export default function TodayTimeline({ onBack }) {
         ].filter(Boolean)}
       />
 
-      {/* 2. Schedule Stream Timeline */}
-      {enrichedStream.length === 0 ? (
+      {/* 2. Day Selector */}
+      <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+        {DAYS.map((day) => {
+          const isToday = day === 'Tuesday';
+          const isSelected = selectedDay === day;
+
+          return (
+            <button
+              key={day}
+              type="button"
+              className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => {
+                setSelectedDay(day);
+                setIsHolidayMode(false);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <span>{day}</span>
+              {isToday && (
+                <span
+                  style={{
+                    padding: '1px 5px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--state-success-bg)',
+                    color: isSelected ? '#FFFFFF' : 'var(--state-success)',
+                  }}
+                >
+                  Today
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3. Schedule Stream Timeline / Holiday / Empty State */}
+      {isHolidayMode ? (
+        <EmptyState
+          icon={Sun}
+          title={`Institutional Recess / University Holiday (${selectedDay})`}
+          description="Campus academic operations are suspended. Lecture halls and laboratory complexes are closed for the declared institutional holiday."
+          action={
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsHolidayMode(false)}
+            >
+              Return to Regular Schedule
+            </button>
+          }
+        />
+      ) : selectedDay === 'Saturday' ? (
         <EmptyState
           icon={Calendar}
-          title="No Lectures Scheduled for Today"
-          description="You have no formal classes or laboratory periods scheduled on this date."
+          title="Weekend · No Scheduled Lectures"
+          description="Saturday is designated for student co-curricular activities, hackathons, and self-directed study."
+          action={
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setSelectedDay('Tuesday')}
+            >
+              View Today's Academic Schedule
+            </button>
+          }
+        />
+      ) : enrichedStream.length === 0 ? (
+        <EmptyState
+          icon={Calendar}
+          title={`No Lectures Scheduled for ${selectedDay}`}
+          description="You have no formal classes or laboratory periods scheduled on this date in the department timetable."
           action={
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => setActiveTab('timetable')}
             >
-              Inspect Weekly Timetable
+              Inspect Weekly Timetable Matrix
             </button>
           }
         />

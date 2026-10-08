@@ -3,8 +3,9 @@ import { User, Mail, GraduationCap, Award, Shield, Check, Edit2 } from 'lucide-r
 import { useNivara } from '../context/NivaraContext';
 
 export default function StudentProfile({ onBack }) {
-  const { students, updateUserProfile } = useNivara();
-  const student = (students || []).find((s) => s.id === '2024-AIDS-042') || (students || [])[0] || {};
+  const { students, currentUser, updateUserProfile } = useNivara();
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+  const student = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({

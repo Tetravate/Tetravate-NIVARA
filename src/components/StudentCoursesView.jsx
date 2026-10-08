@@ -15,7 +15,7 @@ import { useNivara } from '../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader, EmptyState } from './workspace';
 
 export default function StudentCoursesView({ onBack }) {
-  const { courseMaterials, coursesAttendance, showToast } = useNivara();
+  const { courseMaterials, coursesAttendance, announcements, showToast } = useNivara();
   const [selectedCourse, setSelectedCourse] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +73,24 @@ export default function StudentCoursesView({ onBack }) {
     return true;
   });
 
+  // Course-relevant announcements
+  const relevantAnnouncements = (announcements || []).filter((ann) => {
+    if (selectedCourse !== 'ALL') {
+      const matchCode = (ann.title + ' ' + ann.content).toLowerCase().includes(selectedCourse.toLowerCase());
+      const matchSub = (ann.title + ' ' + ann.content).toLowerCase().includes('academic') || (ann.title + ' ' + ann.content).toLowerCase().includes('course');
+      return matchCode || matchSub;
+    }
+    return true;
+  });
+
   const handleDownload = (mat) => {
+    // If a direct verified file URL is bound (e.g. Supabase Storage / S3 CDN)
+    if (mat.fileUrl && mat.fileUrl.startsWith('http')) {
+      window.open(mat.fileUrl, '_blank', 'noopener,noreferrer');
+      showToast(`Opening repository document: ${mat.fileName} ✓`, 'success');
+      return;
+    }
+
     // Generate an authentic document blob for student offline study
     const content = `NIVARA INSTITUTIONAL COURSE REPOSITORY\n\nCourse: ${mat.subjectName} (${mat.courseCode})\nDocument: ${mat.title}\nFaculty: ${mat.facultyName}\nRelease Date: ${mat.uploadedAt}\nFile: ${mat.fileName}\n\nDescription:\n${mat.description || 'Verified course handouts and problem sets for enrolled students.'}\n\n[Verified Institutional Material · Section AIDS-A]`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -254,6 +271,43 @@ export default function StudentCoursesView({ onBack }) {
           ))
         )}
       </div>
+
+      {/* 6. Relevant Academic Announcements */}
+      {relevantAnnouncements.length > 0 && (
+        <section style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+          <SectionHeader
+            title="Course Circulars & Faculty Directives"
+            subtitle="Academic announcements relevant to enrolled semester subjects"
+          />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {relevantAnnouncements.slice(0, 2).map((ann) => (
+              <div
+                key={ann.id}
+                style={{
+                  padding: '1rem 1.15rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                    {ann.title}
+                  </div>
+                  <span className="badge badge-neutral">{ann.department} · {ann.date}</span>
+                </div>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
+                  {ann.content}
+                </p>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  Posted by: <strong>{ann.postedBy}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

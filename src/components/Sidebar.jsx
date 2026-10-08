@@ -6,6 +6,7 @@ import { ROLE_NAVIGATION_REGISTRY } from '../data/navigationConfig';
 export default function Sidebar({ onOpenCaseStudy }) {
   const {
     currentRole,
+    currentUser,
     activeTab,
     setActiveTab,
     setAuditLogOpen,
@@ -16,8 +17,12 @@ export default function Sidebar({ onOpenCaseStudy }) {
     studentPlacementApplications,
   } = useNivara();
 
-  const currentStudent = (students || []).find((s) => s.id === '2024-AIDS-042') || (students || [])[0] || {};
-  const pendingAssignmentsCount = (assignments || []).filter((a) => !a.completed).length;
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+  const currentStudent = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+  const pendingAssignmentsCount = (assignments || []).filter((a) => {
+    const isSubmitted = (a.submissions || []).some((sub) => sub.studentId === activeStudentId && (sub.status === 'submitted' || sub.status === 'graded'));
+    return !a.completed && !isSubmitted;
+  }).length;
   const pendingLeavesCount = (leaveRequests || []).filter((l) => l.status === 'pending').length;
   const atRiskCount = (students || []).filter(
     (s) => s.deptCode === 'AIDS' && (s.attendancePct < 75 || s.backlogs > 0)

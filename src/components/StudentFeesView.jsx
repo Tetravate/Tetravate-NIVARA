@@ -30,6 +30,7 @@ export default function StudentFeesView({ onBack }) {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [receiptViewModal, setReceiptViewModal] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Student's transaction records (filtered by active student id or student name)
   const studentPayments = (paymentHistory || []).filter(
@@ -70,14 +71,20 @@ export default function StudentFeesView({ onBack }) {
 
   const handleConfirmPayment = (e) => {
     e.preventDefault();
-    payStudentFee(pendingAmount, student.id);
-    setPaymentModalOpen(false);
-    confetti({
-      particleCount: 45,
-      spread: 60,
-      origin: { y: 0.6 },
-    });
-    showToast('Tuition fee settlement authorized and reconciled with Bursar Office ✓', 'success');
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    setTimeout(() => {
+      payStudentFee(pendingAmount, student.id);
+      setIsProcessing(false);
+      setPaymentModalOpen(false);
+      confetti({
+        particleCount: 45,
+        spread: 60,
+        origin: { y: 0.6 },
+      });
+      showToast('Tuition fee settlement authorized and reconciled with Bursar Office ✓', 'success');
+    }, 700);
   };
 
   const downloadReceipt = (rec) => {
@@ -424,11 +431,20 @@ export default function StudentFeesView({ onBack }) {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPaymentModalOpen(false)}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setPaymentModalOpen(false)}
+                  disabled={isProcessing}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary btn-sm">
-                  Confirm & Authorize Settlement
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Reconciling Ledger...' : 'Confirm & Authorize Settlement'}
                 </button>
               </div>
             </form>
