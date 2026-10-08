@@ -404,7 +404,27 @@ CREATE TABLE IF NOT EXISTS public.fee_concessions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 20. CATEGORIZED ANNOUNCEMENTS
+-- 20. REFUNDS & REVERSALS PIPELINE
+CREATE TABLE IF NOT EXISTS public.refund_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id VARCHAR(64) REFERENCES public.students(id) ON DELETE CASCADE,
+    student_name VARCHAR(255) NOT NULL,
+    roll_no VARCHAR(64) NOT NULL,
+    payment_id VARCHAR(64),
+    receipt_no VARCHAR(64) NOT NULL,
+    amount NUMERIC(10,2) NOT NULL,
+    reason TEXT NOT NULL,
+    status VARCHAR(32) DEFAULT 'requested' CHECK (status IN ('requested', 'under_review', 'approved', 'processed', 'rejected')),
+    requested_date VARCHAR(64) NOT NULL,
+    processed_date VARCHAR(64),
+    authorized_user VARCHAR(255),
+    mode VARCHAR(128) DEFAULT 'Manual Institutional NEFT Reversal',
+    remarks TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 21. CATEGORIZED ANNOUNCEMENTS
 CREATE TABLE IF NOT EXISTS public.announcements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,

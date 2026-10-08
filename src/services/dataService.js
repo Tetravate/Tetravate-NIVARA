@@ -269,6 +269,34 @@ export const dataService = {
     return { success: true };
   },
 
+  async submitRefundRequest(refundData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('refund_requests').insert([refundData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase refund insert failed:', err);
+      }
+    }
+    return { success: true, data: refundData };
+  },
+
+  async updateRefundStatus(id, status, remarks, authorizedUser) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('refund_requests').update({
+          status,
+          remarks,
+          authorized_user: authorizedUser,
+          updated_at: new Date().toISOString(),
+        }).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase refund status update failed:', err);
+      }
+    }
+    return { success: true };
+  },
+
   /**
    * Fee concessions query
    */

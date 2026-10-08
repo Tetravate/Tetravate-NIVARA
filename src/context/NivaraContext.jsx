@@ -749,13 +749,78 @@ export function NivaraProvider({ children }) {
   const [paymentHistory, setPaymentHistory] = useState(() => getStoredOrFallback('paymentHistory', [
     {
       id: 'pay-2026-081',
+      studentId: '2024-AIDS-042',
+      studentName: 'Aadhi Narayanan',
+      rollNo: '22AIDS042',
       description: 'Semester 4 Tuition & Academic Fees',
       amount: 45000,
       paidOn: '14 Jan 2026',
       receiptNo: 'REC-2026-NIV-8921',
+      mode: 'Online UPI / Card Gateway (Demo Verified)',
+      status: 'verified',
+    },
+    {
+      id: 'pay-2026-042',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      rollNo: '22AIDS003',
+      description: 'Autumn 2026 Semester 5 Tuition & Lab Dues',
+      amount: 45000,
+      paidOn: '02 Oct 2026',
+      receiptNo: 'REC-2026-NIV-8412',
+      mode: 'Bank Challan (Offline Verified)',
+      status: 'verified',
+    },
+    {
+      id: 'pay-2026-019',
+      studentId: '2024-AIDS-014',
+      studentName: 'Kavin Venkatesh',
+      rollNo: '22AIDS014',
+      description: 'Mid-Term Assessment Examination Fee',
+      amount: 2500,
+      paidOn: '25 Sep 2026',
+      receiptNo: 'REC-2026-NIV-7945',
+      mode: 'NEFT Transfer (Verified Voucher)',
       status: 'verified',
     },
   ]));
+
+  // 7b. Student Refunds Pipeline
+  const [refundRequests, setRefundRequests] = useState(() => getStoredOrFallback('refundRequests', [
+    {
+      id: 'ref-1',
+      studentId: '2024-AIDS-014',
+      studentName: 'Kavin Venkatesh',
+      rollNo: '22AIDS014',
+      paymentId: 'pay-2026-019',
+      receiptNo: 'REC-2026-NIV-7945',
+      amount: 2500,
+      reason: 'Duplicate payment of Mid-Term Assessment fee via NEFT and UPI duplicate transaction.',
+      status: 'under_review',
+      requestedDate: '04 Oct 2026',
+      processedDate: null,
+      authorizedUser: 'Mrs. S. Mythili (Accounts Bursar)',
+      mode: 'Manual Institutional NEFT Reversal',
+      remarks: 'Bank transaction reference UTR verified with treasury account.',
+    },
+    {
+      id: 'ref-2',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      rollNo: '22AIDS003',
+      paymentId: 'pay-2026-042',
+      receiptNo: 'REC-2026-NIV-8412',
+      amount: 5000,
+      reason: 'Hostel caution deposit refund on room reallocation to day-scholar status.',
+      status: 'processed',
+      requestedDate: '28 Sep 2026',
+      processedDate: '02 Oct 2026',
+      authorizedUser: 'Mrs. S. Mythili (Accounts Bursar)',
+      mode: 'Manual Institutional NEFT Reversal',
+      remarks: 'Warden clearance certificate verified and voucher reconciled.',
+    },
+  ]));
+
 
   // 8. Placement Opportunities & Applications
   const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', [
@@ -1354,6 +1419,10 @@ export function NivaraProvider({ children }) {
         if (data.feeConcessions) setFeeConcessions(data.feeConcessions);
         if (data.students) setStudents(data.students);
         if (data.auditLogs) setAuditLogs(data.auditLogs);
+      } else if (type === 'SYNC_REFUNDS') {
+        if (data.refundRequests) setRefundRequests(data.refundRequests);
+        if (data.auditLogs) setAuditLogs(data.auditLogs);
+        if (data.notifications) setNotifications(data.notifications);
       } else if (type === 'SYNC_ANNOUNCEMENTS') {
         if (data.announcements) setAnnouncements(data.announcements);
         if (data.notifications) setNotifications(data.notifications);
@@ -1450,6 +1519,7 @@ export function NivaraProvider({ children }) {
   useEffect(() => { saveToStorage('revaluationRequests', revaluationRequests); }, [revaluationRequests]);
   useEffect(() => { saveToStorage('feeConcessions', feeConcessions); }, [feeConcessions]);
   useEffect(() => { saveToStorage('announcements', announcements); }, [announcements]);
+  useEffect(() => { saveToStorage('refundRequests', refundRequests); }, [refundRequests]);
 
 
   // Institutional RBAC Permission Checker
@@ -1878,30 +1948,42 @@ export function NivaraProvider({ children }) {
   };
 
   // WORKFLOW 4: FEES & MULTI-STUDENT BURSARY RECONCILIATION
-  const payStudentFee = (amount, targetStudentId) => {
+  const payStudentFee = (amount, targetStudentId, paymentMode = null, feeDescription = null, customReceiptId = null) => {
     const effectiveStudentId = targetStudentId || currentUser?.studentId || '2024-AIDS-042';
     const targetStudent = students.find((s) => s.id === effectiveStudentId) || students[0];
     const studentName = targetStudent ? targetStudent.name : (currentUser?.userName || 'Aadhi Narayanan');
     const feeAmt = Number(amount) || (targetStudent?.feePendingAmount || 45000);
 
-    // 1. Update Student record
-    const updatedStudents = students.map((st) =>
-      st.id === effectiveStudentId
-        ? { ...st, feeStatus: 'paid', feePendingAmount: 0 }
-        : st
-    );
+    const receiptId = customReceiptId || `REC-${new Date().getFullYear()}-NIV-${Math.floor(1000 + Math.random() * 9000)}`;
+    const effectiveMode = paymentMode || (currentUser.role === 'finance' ? 'Bank Challan (Offline Verified)' : 'Online UPI / Card Gateway (Demo Verified)');
+
+    // 1. Update Student record with strict mathematical balance deduction
+    const updatedStudents = students.map((st) => {
+      if (st.id === effectiveStudentId) {
+        const currentPending = st.feePendingAmount !== undefined ? st.feePendingAmount : 45000;
+        const remaining = Math.max(0, currentPending - feeAmt);
+        return {
+          ...st,
+          feePendingAmount: remaining,
+          feeStatus: remaining === 0 ? 'paid' : 'pending',
+          feeReceiptId: receiptId,
+        };
+      }
+      return st;
+    });
     setStudents(updatedStudents);
 
     // 2. Record in Payment History with verifiable receipt
-    const receiptId = `REC-${new Date().getFullYear()}-NIV-${Math.floor(1000 + Math.random() * 9000)}`;
     const newPayment = {
       id: `pay-${Date.now()}`,
       studentId: effectiveStudentId,
       studentName: studentName,
-      description: 'Autumn 2026 Semester 5 Tuition & Lab Dues',
+      rollNo: targetStudent?.rollNo || effectiveStudentId,
+      description: feeDescription || 'Autumn 2026 Semester 5 Tuition & Lab Dues',
       amount: feeAmt,
       paidOn: 'Today',
       receiptNo: receiptId,
+      mode: effectiveMode,
       status: 'verified',
     };
     const updatedPaymentHistory = [newPayment, ...paymentHistory];
@@ -1928,7 +2010,7 @@ export function NivaraProvider({ children }) {
       actorRole: currentUser.role === 'finance' ? 'Finance' : 'Student',
       actorName: currentUser.userName || studentName,
       action: 'Processed Tuition Payment',
-      details: `Reconciled ₹${feeAmt.toLocaleString()} for ${studentName} (${targetStudentId}). Receipt ${receiptId} issued.`,
+      details: `Reconciled ₹${feeAmt.toLocaleString()} for ${studentName} (${effectiveStudentId}) via ${effectiveMode}. Receipt ${receiptId} issued.`,
     };
     const updatedAuditLogs = [newLog, ...auditLogs];
     setAuditLogs(updatedAuditLogs);
@@ -1939,7 +2021,7 @@ export function NivaraProvider({ children }) {
         id: `notif-${Date.now()}-fin`,
         recipientRole: 'finance',
         title: 'Fee Payment Reconciled',
-        message: `${studentName} cleared ₹${feeAmt.toLocaleString()} dues. Receipt ${receiptId}.`,
+        message: `${studentName} cleared ₹${feeAmt.toLocaleString()} dues via ${effectiveMode}. Receipt ${receiptId}.`,
         timeAgo: 'Just now',
         unread: true,
         tier: 'updates',
@@ -1968,11 +2050,11 @@ export function NivaraProvider({ children }) {
     });
 
     dataService.recordPayment({
-      studentId: targetStudentId,
+      studentId: effectiveStudentId,
       studentName: studentName,
       receiptNo: receiptId,
       amount: feeAmt,
-      mode: currentUser.role === 'finance' ? 'Bank Challan (Offline Verified)' : 'Online UPI/Card Gateway',
+      mode: effectiveMode,
       transactionId: `TXN-${Date.now()}`,
     });
 
@@ -1980,20 +2062,36 @@ export function NivaraProvider({ children }) {
   };
 
   const createFeeStructure = (feeData) => {
+    const studentCount = (students || []).length || 380;
+    const amt = Number(feeData.amount) || 10000;
     const newFee = {
       id: `fee-${Date.now()}`,
       name: feeData.name,
       department: feeData.department || 'All Departments',
-      amount: Number(feeData.amount) || 10000,
+      academicYear: feeData.academicYear || '2026-2027',
+      category: feeData.category || 'Tuition & Academic',
+      semester: feeData.semester || 'Semester 5',
+      amount: amt,
       dueDate: feeData.dueDate || '30 Oct 2026',
-      totalBilled: (Number(feeData.amount) || 10000) * 380,
+      totalBilled: amt * studentCount,
       totalCollected: 0,
       studentsPaidCount: 0,
-      studentsPendingCount: 380,
+      studentsPendingCount: studentCount,
     };
 
     const updatedFeeStructures = [newFee, ...feeStructures];
     setFeeStructures(updatedFeeStructures);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Finance',
+      actorName: currentUser?.userName || 'Accounts Bursar',
+      action: 'Created Fee Structure',
+      details: `Published fee obligation "${newFee.name}" with tariff ₹${newFee.amount.toLocaleString()}.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
 
     const newNotif = {
       id: `notif-${Date.now()}`,
@@ -2011,10 +2109,149 @@ export function NivaraProvider({ children }) {
     broadcastSync('SYNC_FEES', {
       feeStructures: updatedFeeStructures,
       notifications: updatedNotifications,
+      auditLogs: updatedAuditLogs,
     });
 
     showToast(`New fee obligation "${newFee.name}" created ✓`, 'success');
+    return newFee;
   };
+
+  const updateFeeStructure = (id, updates) => {
+    const updated = feeStructures.map((f) => (f.id === id ? { ...f, ...updates } : f));
+    setFeeStructures(updated);
+
+    const target = feeStructures.find((f) => f.id === id);
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Finance',
+      actorName: currentUser?.userName || 'Accounts Bursar',
+      action: 'Updated Fee Schedule',
+      details: `Modified fee schedule for "${target?.name || id}".`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_FEES', {
+      feeStructures: updated,
+      auditLogs: updatedAuditLogs,
+    });
+    showToast(`Fee schedule "${target?.name || id}" updated ✓`, 'success');
+  };
+
+  const deleteFeeStructure = (id) => {
+    const target = feeStructures.find((f) => f.id === id);
+    const updated = feeStructures.filter((f) => f.id !== id);
+    setFeeStructures(updated);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Finance',
+      actorName: currentUser?.userName || 'Accounts Bursar',
+      action: 'Retired Fee Schedule',
+      details: `Retired fee schedule "${target?.name || id}". Historical ledger preserved.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_FEES', {
+      feeStructures: updated,
+      auditLogs: updatedAuditLogs,
+    });
+    showToast(`Fee schedule "${target?.name || id}" retired ✓`, 'info');
+  };
+
+  const createRefundRequest = (refundData) => {
+    const newRef = {
+      id: `ref-${Date.now()}`,
+      studentId: refundData.studentId,
+      studentName: refundData.studentName,
+      rollNo: refundData.rollNo || refundData.studentId,
+      paymentId: refundData.paymentId || `pay-${Date.now()}`,
+      receiptNo: refundData.receiptNo || `REC-${Date.now()}`,
+      amount: Number(refundData.amount) || 0,
+      reason: refundData.reason,
+      status: 'requested',
+      requestedDate: 'Today',
+      processedDate: null,
+      authorizedUser: currentUser?.userName || 'Accounts Bursar',
+      mode: 'Manual Institutional NEFT Reversal',
+      remarks: refundData.remarks || 'Initiated at Bursar finance desk',
+    };
+    const updated = [newRef, ...refundRequests];
+    setRefundRequests(updated);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Finance',
+      actorName: currentUser?.userName || 'Accounts Bursar',
+      action: 'Created Refund Voucher',
+      details: `Logged refund petition for ${newRef.studentName} of ₹${newRef.amount.toLocaleString()}.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_REFUNDS', {
+      refundRequests: updated,
+      auditLogs: updatedAuditLogs,
+    });
+
+    showToast(`Refund petition for ₹${newRef.amount.toLocaleString()} logged ✓`, 'success');
+    return newRef;
+  };
+
+  const processRefundStatus = (id, newStatus, remarks = '', refundMode = 'Manual Institutional NEFT Reversal') => {
+    const target = refundRequests.find((r) => r.id === id);
+    const updated = refundRequests.map((r) => {
+      if (r.id === id) {
+        return {
+          ...r,
+          status: newStatus,
+          remarks: remarks || r.remarks,
+          mode: refundMode,
+          processedDate: newStatus === 'processed' ? 'Today' : r.processedDate,
+          authorizedUser: currentUser?.userName || 'Accounts Bursar',
+        };
+      }
+      return r;
+    });
+    setRefundRequests(updated);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Finance',
+      actorName: currentUser?.userName || 'Accounts Bursar',
+      action: `Refund Status: ${newStatus.toUpperCase()}`,
+      details: `Refund voucher for ${target?.studentName || 'Student'} (₹${target?.amount?.toLocaleString()}) set to ${newStatus}.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    const newNotif = {
+      id: `notif-${Date.now()}`,
+      recipientRole: 'student',
+      title: `Fee Refund Update: ${newStatus.toUpperCase()}`,
+      message: `Your refund request of ₹${target?.amount?.toLocaleString()} for ${target?.receiptNo || 'Fee'} is now: ${newStatus}.`,
+      timeAgo: 'Just now',
+      unread: true,
+      tier: 'important',
+      actionTab: 'fees',
+    };
+    const updatedNotifs = [newNotif, ...notifications];
+    setNotifications(updatedNotifs);
+
+    broadcastSync('SYNC_REFUNDS', {
+      refundRequests: updated,
+      auditLogs: updatedAuditLogs,
+      notifications: updatedNotifs,
+    });
+
+    showToast(`Refund ${id} marked as ${newStatus} ✓`, 'success');
+  };
+
 
   // WORKFLOW 5: CAMPUS PLACEMENTS & PIPELINE
   const createPlacementDrive = (driveData) => {
@@ -2862,7 +3099,11 @@ export function NivaraProvider({ children }) {
         setExamSessions,
         publishedResults,
         feeStructures,
+        setFeeStructures,
         paymentHistory,
+        setPaymentHistory,
+        refundRequests,
+        setRefundRequests,
         placementDrives,
         studentPlacementApplications,
         leaveRequests,
@@ -2896,6 +3137,10 @@ export function NivaraProvider({ children }) {
         approveLeaveRequest,
         payStudentFee,
         createFeeStructure,
+        updateFeeStructure,
+        deleteFeeStructure,
+        createRefundRequest,
+        processRefundStatus,
         createPlacementDrive,
         applyPlacementDrive,
         advancePlacementCandidate,
