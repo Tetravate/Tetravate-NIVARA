@@ -60,9 +60,11 @@ export default function PrincipalDashboard() {
 
     case 'exams_results':
     case 'exams':
+    case 'results':
       return <PrincipalExamsResults onNavigate={(tab) => setActiveTab(tab)} />;
 
     case 'placements':
+    case 'placement':
       return <PrincipalPlacements onNavigate={(tab) => setActiveTab(tab)} />;
 
     case 'finance':

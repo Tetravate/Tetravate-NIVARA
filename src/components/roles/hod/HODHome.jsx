@@ -29,11 +29,21 @@ export default function HODHome({ onNavigate }) {
   const [counselingNotes, setCounselingNotes] = useState('');
 
   // Department of AI & Data Science (AIDS) or first registered department
-  const dept = (departments || []).find((d) => d.code === 'AIDS') || (departments && departments.length > 0 ? departments[0] : null);
+  const dept = (departments || []).find((d) => d && (d.code === 'AIDS' || d.code === currentUser?.deptCode))
+    || (departments && departments.length > 0 ? departments[0] : null)
+    || {
+      code: currentUser?.deptCode || 'AIDS',
+      name: currentUser?.department || 'Department of AI & Data Science',
+      studentCount: 0,
+      facultyCount: 0,
+      attendancePct: 0,
+      avgCgpa: 0,
+      placedPct: 0,
+    };
 
   const deptStudents = useMemo(() => {
     if (!dept) return [];
-    return (students || []).filter((s) => s.deptCode === dept.code || s.department?.includes(dept.name));
+    return (students || []).filter((s) => s && (s.deptCode === dept.code || (dept.name && s.department?.includes(dept.name))));
   }, [students, dept]);
 
   const atRiskStudents = useMemo(() => {
@@ -51,8 +61,9 @@ export default function HODHome({ onNavigate }) {
   const handleSendAnnouncement = (e) => {
     e.preventDefault();
     if (!announcementText.trim() || !dept) return;
-    sendAnnouncement(`Department Circular: ${dept.name}`, announcementText, 'student');
-    showToast(`Department Circular dispatched to ${dept.name} students ✓`, 'success');
+    const deptTitle = dept.name || 'Department';
+    sendAnnouncement(`Department Circular: ${deptTitle}`, announcementText, 'student');
+    showToast(`Department Circular dispatched to ${deptTitle} students ✓`, 'success');
     setAnnouncementText('');
   };
 
@@ -99,7 +110,7 @@ export default function HODHome({ onNavigate }) {
     <div className="workspace-dense" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* 1. Header (HOD Persona) */}
       <PageHeader
-        eyebrow={`Department Operating System · ${dept.name}`}
+        eyebrow={`Department Operating System · ${dept?.name || 'Department'}`}
         title={currentUser?.userName ? `Department Workspace · ${currentUser.userName}` : 'Department Workspace'}
         description="Immediate department operational status, lecture session tracking, student academic health alerts, and pending administrative sanctions."
         actions={[

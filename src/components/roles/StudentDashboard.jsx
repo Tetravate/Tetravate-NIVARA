@@ -68,20 +68,20 @@ export default function StudentDashboard() {
   const liveClass = tuesdayEntries.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || (tuesdayEntries.length > 0 ? tuesdayEntries[0] : null);
 
   // 2. NEXT: next class, upcoming assignment, upcoming exam, immediate item
-  const nextClass = tuesdayEntries.find((e) => e.startTime > '10:30:00') || (tuesdayEntries.length > 1 ? tuesdayEntries[1] : null);
+  const nextClass = tuesdayEntries.find((e) => (e.startTime || '') > '10:30:00') || (tuesdayEntries.length > 1 ? tuesdayEntries[1] : null);
 
-  const urgentAssignment = assignments.find((a) => !a.completed && (a.urgency === 'urgent' || a.urgency === 'important')) || assignments.find((a) => !a.completed);
+  const urgentAssignment = (assignments || []).find((a) => !a.completed && (a.urgency === 'urgent' || a.urgency === 'important')) || (assignments || []).find((a) => !a.completed);
   const nextExam = examSessions && examSessions.length > 0 ? examSessions[0] : null;
   const nextDrive = (placementDrives || []).find((d) => d.status === 'active');
 
   // 3. NEEDS ATTENTION: attendance risk, pending assignments, fee dues, leave status, notifications
-  const lowAttendanceCourses = coursesAttendance.filter((c) => c.percentage < 80);
+  const lowAttendanceCourses = (coursesAttendance || []).filter((c) => (c.percentage || 0) < 80);
   const myLeaves = (leaveRequests || []).filter(
-    (l) => l.studentId === student.id || l.studentName === student.name
+    (l) => (student?.id && l.studentId === student.id) || (student?.name && l.studentName === student.name)
   );
   const pendingLeave = myLeaves.find((l) => l.status === 'pending');
   const recentApprovedLeave = myLeaves.find((l) => l.status === 'approved' && l.dutyAttendanceGranted);
-  const isFeePending = student.feeStatus === 'pending';
+  const isFeePending = student?.feeStatus === 'pending';
 
   // Student's personal placement applications
   const myApplications = (studentPlacementApplications || []).filter(

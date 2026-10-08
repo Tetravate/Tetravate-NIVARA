@@ -68,7 +68,7 @@ export default function CommandPalette() {
     // 1. Role-specific items
     if (currentRole === 'student') {
       // Courses
-      coursesAttendance.forEach((c) => {
+      (coursesAttendance || []).forEach((c) => {
         items.push({
           id: `course-${c.code}`,
           title: `${c.name} (${c.code})`,
@@ -105,7 +105,7 @@ export default function CommandPalette() {
       });
 
       // Assignments
-      assignments.forEach((a) => {
+      (assignments || []).forEach((a) => {
         items.push({
           id: `asg-${a.id}`,
           title: a.title,
@@ -133,7 +133,7 @@ export default function CommandPalette() {
       });
 
       // Placements
-      placementDrives.forEach((d) => {
+      (placementDrives || []).forEach((d) => {
         items.push({
           id: `drive-${d.id}`,
           title: `${d.company} — ${d.role}`,
@@ -185,7 +185,7 @@ export default function CommandPalette() {
       });
     } else if (currentRole === 'faculty') {
       // Students
-      students.forEach((s) => {
+      (students || []).forEach((s) => {
         items.push({
           id: `stud-${s.id}`,
           title: `${s.name} (${s.rollNo || s.id})`,
@@ -200,7 +200,7 @@ export default function CommandPalette() {
       });
 
       // Courses
-      coursesAttendance.forEach((c) => {
+      (coursesAttendance || []).forEach((c) => {
         items.push({
           id: `fac-course-${c.code}`,
           title: `${c.name} (${c.code}) Roster`,
@@ -215,7 +215,7 @@ export default function CommandPalette() {
       });
 
       // Assignments to grade
-      assignments.forEach((a) => {
+      (assignments || []).forEach((a) => {
         items.push({
           id: `fac-asg-${a.id}`,
           title: `Grade: ${a.title}`,
@@ -230,7 +230,7 @@ export default function CommandPalette() {
       });
     } else if (currentRole === 'hod') {
       // At-risk students
-      students
+      (students || [])
         .filter((s) => s.attendancePct < 75 || s.backlogs > 0)
         .forEach((s) => {
           items.push({
@@ -247,7 +247,7 @@ export default function CommandPalette() {
         });
 
       // Faculty Workload
-      facultyMembers.forEach((f) => {
+      (facultyMembers || []).forEach((f) => {
         items.push({
           id: `hod-fac-${f.id}`,
           title: `${f.name} — ${f.designation}`,
@@ -262,7 +262,7 @@ export default function CommandPalette() {
       });
 
       // Leave approvals
-      leaveRequests.forEach((l) => {
+      (leaveRequests || []).forEach((l) => {
         items.push({
           id: `hod-leave-${l.id}`,
           title: `Leave Request: ${l.studentName}`,
@@ -277,7 +277,7 @@ export default function CommandPalette() {
       });
     } else if (currentRole === 'admin') {
       // Departments
-      departments.forEach((d) => {
+      (departments || []).forEach((d) => {
         items.push({
           id: `admin-dept-${d.code}`,
           title: `${d.name} (${d.code})`,
@@ -292,7 +292,7 @@ export default function CommandPalette() {
       });
 
       // Conflicts
-      roomConflicts.forEach((c) => {
+      (roomConflicts || []).forEach((c) => {
         items.push({
           id: `admin-conf-${c.id}`,
           title: `Collision: ${c.title}`,

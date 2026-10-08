@@ -15,7 +15,15 @@ export default function MetricStrip({ metrics = [] }) {
           <div key={item.id || idx} className={`metric-tile ${statusClass}`}>
             <div className="metric-tile-header">
               <span className="metric-tile-label">{item.label}</span>
-              {item.icon && <span className="metric-tile-icon">{item.icon}</span>}
+              {item.icon && (
+                <span className="metric-tile-icon">
+                  {React.isValidElement(item.icon)
+                    ? item.icon
+                    : typeof item.icon === 'function' || (typeof item.icon === 'object' && item.icon !== null)
+                    ? React.createElement(item.icon, { size: 16, 'aria-hidden': 'true' })
+                    : String(item.icon)}
+                </span>
+              )}
             </div>
             <div className="metric-tile-body">
               <span className="metric-tile-value">{item.value}</span>
