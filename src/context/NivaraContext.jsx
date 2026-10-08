@@ -2279,6 +2279,124 @@ export function NivaraProvider({ children }) {
     showToast('Semester examination results officially published ✓', 'success');
   };
 
+  const addExamSession = (session) => {
+    const newSession = {
+      id: `ex-${Date.now()}`,
+      daysRemaining: 14,
+      resultsPublished: false,
+      status: 'Scheduled',
+      capacity: 64,
+      registeredCount: 45,
+      ...session,
+    };
+    const updated = [newSession, ...examSessions];
+    setExamSessions(updated);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Exam Cell',
+      actorName: 'Dr. K. Anand',
+      action: 'Created Examination Session',
+      details: `Scheduled ${newSession.code} - ${newSession.subject} on ${newSession.dateFormatted} at ${newSession.venue}.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_EXAMS', {
+      examSessions: updated,
+      auditLogs: updatedAuditLogs,
+    });
+
+    showToast(`Exam session for ${newSession.code} successfully scheduled ✓`, 'success');
+    return newSession;
+  };
+
+  const updateExamSession = (id, updates) => {
+    const updated = examSessions.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    setExamSessions(updated);
+
+    const target = examSessions.find((s) => s.id === id);
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Exam Cell',
+      actorName: 'Dr. K. Anand',
+      action: 'Updated Examination Session',
+      details: `Modified examination schedule for ${target?.code || id}. Status: ${updates.status || target?.status}.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_EXAMS', {
+      examSessions: updated,
+      auditLogs: updatedAuditLogs,
+    });
+
+    showToast(`Exam session ${target?.code || ''} updated ✓`, 'success');
+  };
+
+  const deleteExamSession = (id) => {
+    const target = examSessions.find((s) => s.id === id);
+    const updated = examSessions.filter((s) => s.id !== id);
+    setExamSessions(updated);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Exam Cell',
+      actorName: 'Dr. K. Anand',
+      action: 'Cancelled Examination Session',
+      details: `Cancelled examination session for ${target?.code || id} (${target?.subject}).`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_EXAMS', {
+      examSessions: updated,
+      auditLogs: updatedAuditLogs,
+    });
+
+    showToast(`Exam session ${target?.code || ''} cancelled ✓`, 'info');
+  };
+
+  const setInternalMarksLock = (courseCode, lockState) => {
+    const updatedMarks = internalMarks.map((m) => {
+      if (m.courseCode === courseCode) {
+        return {
+          ...m,
+          status: lockState ? 'locked' : 'draft',
+        };
+      }
+      return m;
+    });
+    setInternalMarks(updatedMarks);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Exam Cell',
+      actorName: 'Dr. K. Anand',
+      action: lockState ? `Locked CIA Assessment: ${courseCode}` : `Unlocked CIA Assessment: ${courseCode}`,
+      details: lockState
+        ? `Continuous internal assessment marks for ${courseCode} locked for final semester tabulation.`
+        : `Continuous internal assessment marks for ${courseCode} unlocked for department revision.`,
+    };
+    const updatedAuditLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedAuditLogs);
+
+    broadcastSync('SYNC_EXAMS', {
+      internalMarks: updatedMarks,
+      auditLogs: updatedAuditLogs,
+    });
+
+    showToast(
+      lockState ? `CIA assessment for ${courseCode} locked ✓` : `CIA assessment for ${courseCode} unlocked ✓`,
+      'info'
+    );
+  };
+
+
   // SYSTEM / CAMPUS ANNOUNCEMENTS BROADCAST
   const sendAnnouncement = (title, message, targetRole = 'all') => {
     const newLog = {
@@ -2782,6 +2900,10 @@ export function NivaraProvider({ children }) {
         applyPlacementDrive,
         advancePlacementCandidate,
         updateInternalMarks,
+        setInternalMarksLock,
+        addExamSession,
+        updateExamSession,
+        deleteExamSession,
         publishExamResults,
         sendAnnouncement,
         resolveConflict,
