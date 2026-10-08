@@ -762,7 +762,7 @@ export default function PlacementDrives({ onNavigate }) {
                   className="btn btn-primary btn-sm"
                   onClick={() => {
                     setSelectedDriveDetail(null);
-                    onNavigate && onNavigate('eligibility');
+                    if (onNavigate) onNavigate('eligibility');
                   }}
                 >
                   Check Candidate Eligibility

@@ -169,6 +169,7 @@ export const MODULE_ALIASES = {
     leave: 'leaves',
     exam: 'exams',
     result: 'results',
+    profile: 'home',
   },
   faculty: {
     submissions: 'assignments',

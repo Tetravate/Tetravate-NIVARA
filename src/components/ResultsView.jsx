@@ -12,80 +12,76 @@ import {
   ShieldCheck,
   Layers,
 } from 'lucide-react';
-import { RESULTS_DATA } from '../data/mockData';
 import { useNivara } from '../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader, EmptyState, DataTable } from './workspace';
 
 export default function ResultsView({ onBack }) {
   const { students, publishedResults, internalMarks, currentUser, showToast } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
-  const [selectedSem, setSelectedSem] = useState(4);
+  const studentSem = student?.semester || 1;
+  const overallCgpa = student?.cgpa || publishedResults?.overallCgpa || 0;
+  const creditsEarned = student?.creditsCompleted || publishedResults?.creditsEarned || 0;
+  const totalCredits = 160;
+  const completionPct = totalCredits > 0 ? Math.round((creditsEarned / totalCredits) * 100) : 0;
+
+  const [selectedSem, setSelectedSem] = useState(studentSem);
   const [verificationModal, setVerificationModal] = useState(false);
 
-  const overallCgpa = student.cgpa || publishedResults.overallCgpa || 8.72;
-  const creditsEarned = publishedResults.creditsEarned || RESULTS_DATA.completedCredits || 82;
-  const totalCredits = RESULTS_DATA.totalCredits || 160;
-  const completionPct = Math.round((creditsEarned / totalCredits) * 100);
+  const semesterHistory = [1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
+    const isCompleted = s < studentSem;
+    const isCurrent = s === studentSem;
+    return {
+      sem: s,
+      cgpa: s === publishedResults?.semester ? publishedResults.overallCgpa : (isCompleted && student?.cgpa ? student.cgpa : null),
+      credits: isCompleted ? 20 : (isCurrent ? 20 : 0),
+      status: isCompleted ? 'completed' : isCurrent ? 'in-progress' : 'planned',
+    };
+  });
 
   const resultsMetrics = [
     {
       label: 'Cumulative CGPA',
-      value: `${overallCgpa}`,
+      value: overallCgpa ? `${overallCgpa}` : '0.0',
       unit: '/ 10.0',
-      subtext: 'First Class with Distinction',
-      state: 'success',
+      subtext: overallCgpa >= 8.5 ? 'First Class with Distinction' : overallCgpa >= 6.5 ? 'First Class' : (overallCgpa > 0 ? 'Satisfactory Standing' : 'No graded terms yet'),
+      state: overallCgpa > 0 ? 'success' : 'neutral',
     },
     {
       label: 'Degree Credits Earned',
       value: `${creditsEarned} Credits`,
-      subtext: `${completionPct}% of 160 degree requirement`,
-      state: 'info',
+      subtext: totalCredits > 0 ? `${completionPct}% of ${totalCredits} degree requirement` : '0% requirement completed',
+      state: creditsEarned > 0 ? 'info' : 'neutral',
     },
     {
       label: 'Academic Standing',
-      value: student.standing || 'Good Standing',
-      subtext: 'Zero active academic backlogs',
+      value: student?.standing || (overallCgpa > 0 ? 'Good Standing' : 'Pending Enrollment'),
+      subtext: 'Official COE standing record',
       state: 'success',
     },
     {
       label: 'Latest Published Term',
-      value: `Semester ${publishedResults.semester || 4}`,
-      subtext: `Published: ${publishedResults.publishedAt || '15 Aug 2026'}`,
-      state: 'neutral',
+      value: publishedResults?.semester ? `Semester ${publishedResults.semester}` : 'None Published',
+      subtext: publishedResults?.publishedAt ? `Published: ${publishedResults.publishedAt}` : 'No published grade sheet yet',
+      state: publishedResults?.semester ? 'neutral' : 'warning',
     },
   ];
 
-  // Course results for Semester 4 (the latest officially published semester)
-  const sem4Courses = [
-    { code: 'CS201', name: 'Data Structures Fundamentals', credits: 4, grade: 'A+', points: 10, status: 'Passed' },
-    { code: 'CS202', name: 'Computer Architecture & Org', credits: 4, grade: 'A', points: 9, status: 'Passed' },
-    { code: 'CS203', name: 'Object Oriented Programming', credits: 4, grade: 'A+', points: 10, status: 'Passed' },
-    { code: 'MA201', name: 'Linear Algebra & Probability', credits: 4, grade: 'B+', points: 8, status: 'Passed' },
-    { code: 'CS204', name: 'Software Engineering Principles', credits: 3, grade: 'A', points: 9, status: 'Passed' },
-    { code: 'CS205', name: 'DSA Practical Systems Lab', credits: 2, grade: 'O', points: 10, status: 'Passed' },
-  ];
-
-  // Course results for Semester 3
-  const sem3Courses = [
-    { code: 'CS103', name: 'Digital Logic & Circuit Design', credits: 4, grade: 'A+', points: 10, status: 'Passed' },
-    { code: 'CS104', name: 'Discrete Computational Math', credits: 4, grade: 'A', points: 9, status: 'Passed' },
-    { code: 'CS105', name: 'Programming in Python & C++', credits: 4, grade: 'O', points: 10, status: 'Passed' },
-    { code: 'MA102', name: 'Calculus & Differential Equations', credits: 4, grade: 'A', points: 9, status: 'Passed' },
-    { code: 'CS106', name: 'Digital Systems Practical Lab', credits: 2, grade: 'A+', points: 10, status: 'Passed' },
-  ];
-
   const getCoursesForSem = (sem) => {
-    if (sem === 4) return sem4Courses;
-    if (sem === 3) return sem3Courses;
-    return sem4Courses;
+    if (Array.isArray(publishedResults?.courses) && publishedResults.semester === sem) {
+      return publishedResults.courses;
+    }
+    if (Array.isArray(student?.semesterResults?.[sem])) {
+      return student.semesterResults[sem];
+    }
+    return [];
   };
 
-  const isCurrentSem = selectedSem === 5;
-  const isFutureSem = selectedSem > 5;
-  const isPublishedSem = selectedSem <= 4;
+  const isCurrentSem = selectedSem === studentSem;
+  const isFutureSem = selectedSem > studentSem;
+  const isPublishedSem = selectedSem < studentSem;
 
   const currentCourses = getCoursesForSem(selectedSem);
 
@@ -170,7 +166,7 @@ export default function ResultsView({ onBack }) {
         />
 
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {RESULTS_DATA.semesterHistory.map((s) => {
+          {semesterHistory.map((s) => {
             const isCompleted = s.status === 'completed';
             const isCurrent = s.status === 'in-progress';
             const isSelected = selectedSem === s.sem;
@@ -362,11 +358,11 @@ export default function ResultsView({ onBack }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', fontSize: '0.8125rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Student Name:</span>
-                    <div style={{ fontWeight: 700 }}>{student.name}</div>
+                    <div style={{ fontWeight: 700 }}>{student?.name || currentUser?.userName || '—'}</div>
                   </div>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Registration Roll:</span>
-                    <div style={{ fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{student.id}</div>
+                    <div style={{ fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{student?.rollNo || student?.id || activeStudentId || '—'}</div>
                   </div>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Cumulative CGPA:</span>
@@ -379,7 +375,7 @@ export default function ResultsView({ onBack }) {
                 </div>
 
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px dashed var(--border-subtle)', fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                  Verification Hash: <code>NIV-TRANSCRIPT-2026-V892-OK</code> · Digital Seal Affixed
+                  Verification Status: <code>{overallCgpa > 0 ? 'COE-SEALED' : 'UNVERIFIED'}</code> · Digital Records Office
                 </div>
               </div>
 

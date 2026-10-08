@@ -13,15 +13,20 @@ export default function AdminPrograms() {
   const [addProgramModal, setAddProgramModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Initial canonical programs across academic branches
-  const [programsList, setProgramsList] = useState([
-    { id: 'PRG-BTECH-AIDS', code: 'BTECH-AIDS', name: 'B.Tech in Artificial Intelligence & Data Science', deptCode: 'AIDS', deptName: 'AI & Data Science', duration: '4 Years (8 Semesters)', degree: 'Undergraduate', intake: 120, status: 'active' },
-    { id: 'PRG-MTECH-AIDS', code: 'MTECH-AIDS', name: 'M.Tech in Computational Neural Systems', deptCode: 'AIDS', deptName: 'AI & Data Science', duration: '2 Years (4 Semesters)', degree: 'Postgraduate', intake: 30, status: 'active' },
-    { id: 'PRG-BTECH-CSE', code: 'BTECH-CSE', name: 'B.Tech in Computer Science & Engineering', deptCode: 'CSE', deptName: 'Computer Science & Engg', duration: '4 Years (8 Semesters)', degree: 'Undergraduate', intake: 180, status: 'active' },
-    { id: 'PRG-BTECH-ECE', code: 'BTECH-ECE', name: 'B.Tech in Electronics & Communication Engg', deptCode: 'ECE', deptName: 'Electronics & Comm', duration: '4 Years (8 Semesters)', degree: 'Undergraduate', intake: 120, status: 'active' },
-    { id: 'PRG-BTECH-MECH', code: 'BTECH-MECH', name: 'B.Tech in Mechanical Engineering', deptCode: 'MECH', deptName: 'Mechanical Engineering', duration: '4 Years (8 Semesters)', degree: 'Undergraduate', intake: 90, status: 'active' },
-    { id: 'PRG-BTECH-CIVIL', code: 'BTECH-CIVIL', name: 'B.Tech in Civil Engineering', deptCode: 'CIVIL', deptName: 'Civil Engineering', duration: '4 Years (8 Semesters)', degree: 'Undergraduate', intake: 60, status: 'active' },
-  ]);
+  // Canonical programs derived dynamically from departments
+  const [programsList, setProgramsList] = useState(() => {
+    return (departments || []).map((d) => ({
+      id: `PRG-BTECH-${d.code}`,
+      code: `BTECH-${d.code}`,
+      name: `B.Tech in ${d.name}`,
+      deptCode: d.code,
+      deptName: d.name,
+      duration: '4 Years (8 Semesters)',
+      degree: 'Undergraduate',
+      intake: d.studentCount || 60,
+      status: 'active',
+    }));
+  });
 
   const [programForm, setProgramForm] = useState({
     code: '',

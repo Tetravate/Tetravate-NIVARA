@@ -35,7 +35,7 @@ export default function PrincipalHome({ onNavigate }) {
   }, [departments]);
 
   const collegeAttendance = useMemo(() => {
-    if (!departments || departments.length === 0) return 85.0;
+    if (!departments || departments.length === 0) return 0;
     const sum = departments.reduce((acc, d) => acc + (d.attendancePct || 0), 0);
     return Number((sum / departments.length).toFixed(1));
   }, [departments]);
@@ -53,7 +53,7 @@ export default function PrincipalHome({ onNavigate }) {
     return (feeStructures || []).reduce((acc, f) => acc + (f.totalCollected || 0), 0);
   }, [feeStructures]);
 
-  const collectionRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 87;
+  const collectionRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
 
   // Pending institutional approvals
   const pendingApprovalsCount = useMemo(() => {
@@ -75,21 +75,21 @@ export default function PrincipalHome({ onNavigate }) {
   const principalMetrics = [
     {
       label: 'Enrolled Students',
-      value: totalStudents.toLocaleString(),
-      subtext: `${departments.length} Engineering Divisions`,
+      value: totalStudents > 0 ? totalStudents.toLocaleString() : '0 Students',
+      subtext: departments.length > 0 ? `${departments.length} Engineering Divisions` : 'No departments registered',
       state: 'neutral',
     },
     {
       label: 'College Attendance',
-      value: `${collegeAttendance}%`,
-      subtext: 'Above institutional 75% cutoff',
-      state: collegeAttendance >= 80 ? 'success' : 'warning',
+      value: departments.length > 0 ? `${collegeAttendance}%` : 'N/A',
+      subtext: departments.length > 0 ? (collegeAttendance >= 75 ? 'Above institutional 75% cutoff' : 'Below institutional threshold') : 'No attendance data recorded',
+      state: departments.length > 0 ? (collegeAttendance >= 80 ? 'success' : 'warning') : 'neutral',
     },
     {
       label: 'Fee Recovery',
-      value: `${collectionRate}%`,
-      subtext: `₹${(totalCollected / 10000000).toFixed(2)} Cr of ₹${(totalBilled / 10000000).toFixed(2)} Cr`,
-      state: 'info',
+      value: totalBilled > 0 ? `${collectionRate}%` : 'N/A',
+      subtext: totalBilled > 0 ? `₹${(totalCollected / 10000000).toFixed(2)} Cr of ₹${(totalBilled / 10000000).toFixed(2)} Cr` : 'No fee structures scheduled',
+      state: totalBilled > 0 ? 'info' : 'neutral',
     },
     {
       label: 'Academic Risk Alert',

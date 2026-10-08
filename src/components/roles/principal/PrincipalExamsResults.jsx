@@ -13,9 +13,11 @@ import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader, DataTable } from '../../workspace';
 
 export default function PrincipalExamsResults() {
-  const { examSessions, publishedResults, departments, showToast } = useNivara();
+  const { examSessions, publishedResults, departments, students, showToast } = useNivara();
 
   const [activeViewTab, setActiveViewTab] = useState('schedules'); // 'schedules' | 'results'
+
+  const supplementaryCount = (students || []).filter((s) => (s.backlogs || 0) > 0).length;
 
   const examMetrics = [
     {
@@ -26,21 +28,21 @@ export default function PrincipalExamsResults() {
     },
     {
       label: 'End-Sem Pass Percentage',
-      value: `${publishedResults?.departmentPassPct || 88.4}%`,
-      subtext: 'Autumn 2026 Academic Term',
-      state: 'success',
+      value: `${publishedResults?.departmentPassPct || 0}%`,
+      subtext: (publishedResults?.departmentPassPct || 0) > 0 ? 'Official Examination Board Rate' : 'Pending published results',
+      state: (publishedResults?.departmentPassPct || 0) >= 80 ? 'success' : 'neutral',
     },
     {
       label: 'Evaluation Board Status',
-      value: 'Completed & Certified',
-      subtext: 'Zero pending mark tabulations',
-      state: 'success',
+      value: publishedResults?.status === 'published' ? 'Completed & Certified' : 'In Session',
+      subtext: publishedResults?.status === 'published' ? 'Certified results gazette' : 'Moderation in progress',
+      state: publishedResults?.status === 'published' ? 'success' : 'warning',
     },
     {
       label: 'Supplementary Candidates',
-      value: '66 Candidates',
-      subtext: 'Special exam scheduled Nov 2026',
-      state: 'info',
+      value: `${supplementaryCount} Candidates`,
+      subtext: supplementaryCount > 0 ? 'Supplementary remedial eligible' : 'Zero active arrear backlogs',
+      state: supplementaryCount > 0 ? 'warning' : 'success',
     },
   ];
 

@@ -38,19 +38,50 @@ export default function HODAttendance({ onNavigate }) {
     return deptStudents.filter((s) => (s.attendancePct || 0) < 75);
   }, [deptStudents]);
 
-  const yearBreakdown = [
-    { year: '1st Year (Semester 1 & 2)', students: 100, conducted: 140, rate: 88.5, status: 'good' },
-    { year: '2nd Year (Semester 3 & 4)', students: 95, conducted: 152, rate: 85.5, status: 'good' },
-    { year: '3rd Year (Semester 5 & 6)', students: 95, conducted: 168, rate: 83.3, status: 'warning' },
-    { year: '4th Year (Semester 7 & 8)', students: 90, conducted: 135, rate: 82.0, status: 'warning' },
-  ];
+  const sectionBreakdown = useMemo(() => {
+    const groups = {};
+    deptStudents.forEach((s) => {
+      const sec = s.section ? `AIDS-${s.section} (Sem ${s.semester || 1})` : 'AIDS-A';
+      if (!groups[sec]) {
+        groups[sec] = { section: sec, advisor: s.advisor || 'Assigned Faculty', totalPct: 0, count: 0 };
+      }
+      groups[sec].count += 1;
+      groups[sec].totalPct += (s.attendancePct || 0);
+    });
+    return Object.values(groups).map((g) => ({
+      section: g.section,
+      advisor: g.advisor,
+      rate: g.count > 0 ? Number((g.totalPct / g.count).toFixed(1)) : 0,
+      present: Math.round((g.count * (g.totalPct / (g.count || 1))) / 100),
+      total: g.count,
+    }));
+  }, [deptStudents]);
 
-  const sectionBreakdown = [
-    { section: 'AIDS-A (Sem 5)', advisor: 'Dr. Priya Raman', rate: 85.4, present: 51, total: 60 },
-    { section: 'AIDS-B (Sem 5)', advisor: 'Prof. Ananya Sen', rate: 81.2, present: 48, total: 60 },
-    { section: 'AIDS-A (Sem 3)', advisor: 'Prof. S. Venkatesh', rate: 86.1, present: 56, total: 65 },
-    { section: 'AIDS-B (Sem 3)', advisor: 'Dr. Rajesh K.', rate: 85.0, present: 55, total: 65 },
-  ];
+  const yearBreakdown = useMemo(() => {
+    const groups = {};
+    deptStudents.forEach((s) => {
+      const y = s.year || (s.semester ? `${Math.ceil(s.semester / 2)} Year` : 'Current Year');
+      if (!groups[y]) {
+        groups[y] = { year: y, students: 0, totalPct: 0 };
+      }
+      groups[y].students += 1;
+      groups[y].totalPct += (s.attendancePct || 0);
+    });
+    return Object.values(groups).map((g) => {
+      const rate = g.students > 0 ? Number((g.totalPct / g.students).toFixed(1)) : 0;
+      return {
+        year: g.year,
+        students: g.students,
+        conducted: 0,
+        rate,
+        status: rate >= 80 ? 'good' : 'warning',
+      };
+    });
+  }, [deptStudents]);
+
+  const sortedCourses = [...(coursesAttendance || [])].sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+  const highestCourse = sortedCourses.length > 0 ? sortedCourses[0] : null;
+  const lowestCourse = sortedCourses.length > 1 ? sortedCourses[sortedCourses.length - 1] : null;
 
   const metrics = [
     {
@@ -67,14 +98,14 @@ export default function HODAttendance({ onNavigate }) {
     },
     {
       label: 'Highest Attended Course',
-      value: 'AI302 (95%)',
-      subtext: 'ML Lab (Dr. Rajesh K.)',
+      value: highestCourse ? `${highestCourse.code} (${highestCourse.percentage}%)` : 'No data',
+      subtext: highestCourse ? highestCourse.name : 'No courses recorded',
       state: 'success',
     },
     {
       label: 'Lowest Attended Course',
-      value: 'MA301 (78.5%)',
-      subtext: 'Discrete Math (Prof. Venkatesh)',
+      value: lowestCourse ? `${lowestCourse.code} (${lowestCourse.percentage}%)` : 'No data',
+      subtext: lowestCourse ? lowestCourse.name : 'No courses recorded',
       state: 'warning',
     },
   ];
@@ -315,7 +346,7 @@ export default function HODAttendance({ onNavigate }) {
                     </div>
 
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      Section: {st.section || 'AIDS-A'} · Assigned Advisor: <strong>{st.advisor || 'Dr. Priya Raman'}</strong> · Shortfall: {Math.max(1, Math.ceil((0.75 * 100 - st.attendancePct)))}%
+                      Section: {st.section || 'General'} · Assigned Advisor: <strong>{st.advisor || 'Not Assigned'}</strong> · Shortfall: {Math.max(1, Math.ceil((0.75 * 100 - (st.attendancePct || 0))))}%
                     </div>
                   </div>
 

@@ -272,7 +272,7 @@ export default function PrincipalStudents() {
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)' }}>Faculty Mentor:</span>
-                  <div style={{ fontWeight: 600 }}>{inspectedStudent.advisor || 'Dr. Priya Raman'}</div>
+                  <div style={{ fontWeight: 600 }}>{inspectedStudent.advisor || 'Not Assigned'}</div>
                 </div>
               </div>
 

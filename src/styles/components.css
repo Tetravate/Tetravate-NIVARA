@@ -96,6 +96,18 @@
   outline-offset: 1px;
 }
 
+/* Accessible Focus Indicators for WCAG 2.1 AA */
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.nav-link:focus-visible,
+.role-pill-trigger:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 .btn-primary {
   background: var(--brand-primary);
   color: var(--text-inverse);

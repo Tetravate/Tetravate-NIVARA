@@ -27,34 +27,34 @@ export default function StudentPlacementView({ onBack }) {
     showToast,
   } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
   // Student's personal applications & offers
   const myApplications = (studentPlacementApplications || []).filter(
-    (a) => a.studentId === student.id || a.studentName === student.name
+    (a) => (student.id && a.studentId === student.id) || (student.name && a.studentName === student.name)
   );
 
   const myOffers = (placementOffers || []).filter(
-    (o) => o.studentId === student.id || o.studentName === student.name
+    (o) => (student.id && o.studentId === student.id) || (student.name && o.studentName === student.name)
   );
 
   const eligibleDrives = (placementDrives || []).filter(
-    (d) => student.cgpa >= d.minCgpa && (student.backlogs || 0) <= d.allowedBacklogs
+    (d) => (student.cgpa || 0) >= (d.minCgpa || 0) && (student.backlogs || 0) <= (d.allowedBacklogs || 0)
   );
 
   const placementMetrics = [
     {
       label: 'Open Campus Drives',
       value: `${(placementDrives || []).length} Companies`,
-      subtext: 'Autumn 2026 Recruitment',
+      subtext: (placementDrives || []).length > 0 ? 'Active Recruitment Cycle' : 'No Open Drives',
       state: 'info',
     },
     {
       label: 'Eligible Opportunities',
       value: `${eligibleDrives.length} Drives`,
-      subtext: `Based on CGPA ${student.cgpa || 8.72}`,
-      state: 'success',
+      subtext: student.cgpa ? `Based on CGPA ${student.cgpa}` : 'Pending CGPA record',
+      state: eligibleDrives.length > 0 ? 'success' : 'neutral',
     },
     {
       label: 'Active Applications',
@@ -64,9 +64,9 @@ export default function StudentPlacementView({ onBack }) {
     },
     {
       label: 'Candidate Standing',
-      value: 'Super Dream Tier',
-      subtext: '>8.0 CGPA & Zero Backlogs',
-      state: 'success',
+      value: (student.cgpa || 0) >= 8.5 ? 'Super Dream Tier' : (student.cgpa || 0) >= 7.0 ? 'Dream Tier' : ((student.cgpa || 0) > 0 ? 'Standard Tier' : 'Unranked'),
+      subtext: student.cgpa ? `${student.cgpa} CGPA · ${student.backlogs || 0} Backlogs` : 'No CGPA on record',
+      state: (student.cgpa || 0) >= 7.0 ? 'success' : 'neutral',
     },
   ];
 

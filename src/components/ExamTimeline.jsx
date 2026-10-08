@@ -19,7 +19,7 @@ import { PageHeader, MetricStrip, SectionHeader, EmptyState } from './workspace'
 export default function ExamTimeline({ onBack }) {
   const { examSessions, students, currentUser, showToast } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
   const [expandedId, setExpandedId] = useState(null);
@@ -32,7 +32,7 @@ export default function ExamTimeline({ onBack }) {
     {
       label: 'Scheduled Assessments',
       value: `${totalExams} Papers`,
-      subtext: 'Autumn Mid-Term Examinations',
+      subtext: totalExams > 0 ? 'Examinations In Session' : 'No Active Examination Period',
       state: 'info',
     },
     {
@@ -43,15 +43,15 @@ export default function ExamTimeline({ onBack }) {
     },
     {
       label: 'Exam Center / Block',
-      value: 'Block B Examination Hall',
-      subtext: 'Central Campus Assessment Wing',
+      value: nextExam?.venue || 'Campus Examination Hall',
+      subtext: nextExam?.room ? `Room ${nextExam.room}` : 'Central Assessment Wing',
       state: 'neutral',
     },
     {
       label: 'Admit Card Status',
-      value: student.attendancePct >= 75 ? 'Cleared & Ready' : 'Provisional Clearance',
-      subtext: student.attendancePct >= 75 ? 'Continuous Attendance >75%' : 'Requires HOD Endorsement',
-      state: student.attendancePct >= 75 ? 'success' : 'warning',
+      value: (student?.attendancePct ?? 0) >= 75 ? 'Cleared & Ready' : 'Provisional Clearance',
+      subtext: (student?.attendancePct ?? 0) >= 75 ? 'Continuous Attendance ≥75%' : 'Requires HOD Endorsement',
+      state: (student?.attendancePct ?? 0) >= 75 ? 'success' : 'warning',
     },
   ];
 

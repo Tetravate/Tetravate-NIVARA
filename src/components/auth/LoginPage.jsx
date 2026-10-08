@@ -484,7 +484,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     id="forgot-email-input"
                     type="email"
                     required
-                    placeholder="e.g. aadhi.narayanan@nivara.edu"
+                    placeholder="e.g. student@nivara.edu"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     style={{

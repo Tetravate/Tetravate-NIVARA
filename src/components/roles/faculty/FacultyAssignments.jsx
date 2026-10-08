@@ -40,11 +40,11 @@ export default function FacultyAssignments() {
   const [gradeFeedback, setGradeFeedback] = useState('');
   const [gradeValidationError, setGradeValidationError] = useState('');
 
-  // Filter assignments strictly to those taught by Dr. Priya Raman (or general course deliverables in CS301/AI302)
+  // Filter assignments strictly to those taught by current faculty
   const facultyAssignments = useMemo(() => {
+    const facultyName = currentUser?.userName || '';
     return (assignments || []).filter((a) => {
-      // Dr. Priya Raman teaches CS301 & AI302
-      return a.courseCode === 'CS301' || a.courseCode === 'AI302' || a.faculty?.includes('Priya Raman') || a.faculty === currentUser?.userName;
+      return !facultyName || a.faculty === facultyName || a.faculty?.includes(facultyName);
     });
   }, [assignments, currentUser]);
 
@@ -107,7 +107,7 @@ export default function FacultyAssignments() {
 
     createAssignment({
       ...formData,
-      faculty: currentUser?.userName || 'Dr. Priya Raman',
+      faculty: currentUser?.userName || 'Faculty',
     });
 
     setCreateModalOpen(false);
@@ -309,23 +309,15 @@ export default function FacultyAssignments() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                      handleOpenGrading(asg, {
-                        studentId: '2024-AIDS-042',
-                        studentName: 'Aadhi Narayanan',
-                        status: 'submitted',
-                        submittedAt: 'Today · 10:15 AM',
-                        notes: 'Implemented using standard Fibonacci heap with custom timer benchmarks in C++.',
-                        grade: asg.grade || null,
-                        feedback: asg.feedback || null,
-                      });
-                    }}
-                  >
-                    <Award size={13} /> Open Grading Sheet
-                  </button>
+                  {asg.submissions && asg.submissions.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleOpenGrading(asg, asg.submissions[0])}
+                    >
+                      <Award size={13} /> Open Grading Sheet
+                    </button>
+                  )}
                 </div>
 
                 {/* Brief description */}
@@ -347,114 +339,53 @@ export default function FacultyAssignments() {
                 {/* Submissions Section */}
                 <div>
                   <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                    Student Submissions & Telemetry
+                    Student Submissions & Telemetry ({asg.submissions ? asg.submissions.length : 0})
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.5rem' }}>
-                    {/* Active student submission card */}
-                    <div
-                      style={{
-                        padding: '0.75rem 0.95rem',
-                        borderRadius: 'var(--radius-xs)',
-                        background: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          Aadhi Narayanan
-                        </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          2024-AIDS-042 · {asg.completed ? 'Graded ✓' : 'Submitted (Awaiting Review)'}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                        onClick={() =>
-                          handleOpenGrading(asg, {
-                            studentId: '2024-AIDS-042',
-                            studentName: 'Aadhi Narayanan',
-                            status: 'submitted',
-                            submittedAt: 'Today',
-                            notes: 'Repository: https://github.com/aadhi-narayanan/ds-benchmarks',
-                            grade: asg.grade || null,
-                            feedback: asg.feedback || null,
-                          })
-                        }
-                      >
-                        {asg.completed ? 'Update Grade' : 'Grade Now'}
-                      </button>
+                  {(!asg.submissions || asg.submissions.length === 0) ? (
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>
+                      No student submissions recorded for this assignment yet.
                     </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.5rem' }}>
+                      {asg.submissions.map((sub, sIdx) => (
+                        <div
+                          key={sub.studentId || sIdx}
+                          style={{
+                            padding: '0.75rem 0.95rem',
+                            borderRadius: 'var(--radius-xs)',
+                            background: 'var(--bg-canvas)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {sub.studentName || 'Student'}
+                            </div>
+                            <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                              {sub.studentId} · {sub.status === 'graded' || sub.grade ? `Graded (${sub.grade})` : 'Submitted (Awaiting Review)'}
+                            </div>
+                          </div>
 
-                    {/* Secondary mock submissions */}
-                    <div
-                      style={{
-                        padding: '0.75rem 0.95rem',
-                        borderRadius: 'var(--radius-xs)',
-                        background: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          Arun Kumar
+                          {sub.status === 'graded' || sub.grade ? (
+                            <span className="badge badge-success">{sub.grade}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                              onClick={() => handleOpenGrading(asg, sub)}
+                            >
+                              Grade
+                            </button>
+                          )}
                         </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          2024-AIDS-003 · Graded (20 / 20)
-                        </div>
-                      </div>
-                      <span className="badge badge-success">20 / 20</span>
+                      ))}
                     </div>
-
-                    <div
-                      style={{
-                        padding: '0.75rem 0.95rem',
-                        borderRadius: 'var(--radius-xs)',
-                        background: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          Kavin Venkatesh
-                        </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          2024-AIDS-014 · Pending Evaluation
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                        onClick={() =>
-                          handleOpenGrading(asg, {
-                            studentId: '2024-AIDS-014',
-                            studentName: 'Kavin Venkatesh',
-                            status: 'submitted',
-                            submittedAt: 'Yesterday',
-                            notes: 'Implemented Adjacency Matrix with recursive depth-first traversal.',
-                            grade: null,
-                            feedback: null,
-                          })
-                        }
-                      >
-                        Grade
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             );

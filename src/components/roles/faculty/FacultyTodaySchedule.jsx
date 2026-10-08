@@ -17,7 +17,7 @@ import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, SectionHeader, EmptyState } from '../../workspace';
 
 export default function FacultyTodaySchedule({ onBack }) {
-  const { timetableEntries, setActiveTab } = useNivara();
+  const { timetableEntries, currentUser, setActiveTab } = useNivara();
   const [selectedDay, setSelectedDay] = useState('Tuesday');
   const [isHolidayMode, setIsHolidayMode] = useState(false);
 
@@ -34,10 +34,10 @@ export default function FacultyTodaySchedule({ onBack }) {
 
   const todayDateString = DAY_DATES[selectedDay] || `${selectedDay} · Academic Week`;
 
-  // Filter timetable for faculty (Dr. Priya Raman)
-  // On Tuesday and Monday, Dr. Priya Raman has assigned slots in the department
+  // Filter timetable for authenticated faculty
+  const facultyName = currentUser?.userName || '';
   const facultyEntries = (timetableEntries || []).filter(
-    (e) => e.facultyName === 'Dr. Priya Raman' || e.courseCode === 'CS301' || e.courseCode === 'AI302'
+    (e) => (facultyName && (e.facultyName === facultyName || e.faculty === facultyName)) || !facultyName
   );
 
   const daySessions = facultyEntries

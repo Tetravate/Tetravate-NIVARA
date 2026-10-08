@@ -21,8 +21,8 @@ export default function MobileBottomNav({ onOpenCaseStudy: _onOpenCaseStudy }) {
 
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
-  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
-  const currentStudent = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+  const currentStudent = (students || []).find((s) => (activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser?.email)) || null;
   const pendingAssignmentsCount = (assignments || []).filter((a) => {
     const isSubmitted = (a.submissions || []).some((sub) => sub.studentId === activeStudentId && (sub.status === 'submitted' || sub.status === 'graded'));
     return !a.completed && !isSubmitted;

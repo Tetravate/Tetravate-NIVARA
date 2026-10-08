@@ -26,7 +26,7 @@ export default function HODAtRisk() {
   const [searchQuery, setSearchQuery] = useState('');
   const [counselingModal, setCounselingModal] = useState(null);
   const [counselingNotes, setCounselingNotes] = useState('');
-  const [assignedMentor, setAssignedMentor] = useState('Dr. Priya Raman');
+  const [assignedMentor, setAssignedMentor] = useState(() => (facultyMembers && facultyMembers[0]?.name) || '');
 
   // Scoped strictly to Department of AI & Data Science
   const deptStudents = useMemo(() => {
@@ -55,31 +55,16 @@ export default function HODAtRisk() {
             type: 'backlogs',
             severity: 'urgent',
             label: `Active Course Backlogs: ${st.backlogs}`,
-            detail: 'Arrear in Semester 4 Discrete Mathematics. Remedial examination registration required.',
+            detail: 'Remedial examination registration and faculty mentoring required.',
           });
         }
 
-        // 3. Specific known demo cases with missing work or low CIA
-        if (st.rollNo === '22AIDS014' || st.id === '2024-AIDS-014' || st.name.includes('Kavin')) {
-          triggers.push({
-            type: 'missing-work',
-            severity: 'warning',
-            label: 'Overdue Deliverable: CS301 Dijkstra Benchmarks',
-            detail: 'Lab assignment unsubmitted past deadline. Contacted by course instructor.',
-          });
-          triggers.push({
-            type: 'cia',
-            severity: 'warning',
-            label: 'Continuous Assessment: 17 / 25',
-            detail: 'Moderate CIA standing requiring laboratory makeup tests.',
-          });
-        }
-
-        if (st.rollNo === '22AIDS027' || st.id === '2024-AIDS-027' || st.name.includes('Tanvi')) {
+        // 3. Continuous Internal Assessment benchmark
+        if (st.ciaScore !== undefined && st.ciaScore < 15) {
           triggers.push({
             type: 'cia',
             severity: 'urgent',
-            label: 'Continuous Assessment: 14 / 25',
+            label: `Continuous Assessment: ${st.ciaScore} / 25`,
             detail: 'Below minimum departmental internal benchmark (15/25).',
           });
         }
@@ -332,7 +317,7 @@ export default function HODAtRisk() {
                   }}
                 >
                   <div>
-                    Assigned Academic Advisor: <strong>{st.advisor || 'Dr. Priya Raman'}</strong> · CGPA: <strong>{st.cgpa}</strong>
+                    Assigned Academic Advisor: <strong>{st.advisor || 'Not Assigned'}</strong> · CGPA: <strong>{st.cgpa}</strong>
                   </div>
                   <div>
                     Action Protocol: Issue formal parent notification & mandate 4 hours weekly remedial problem-solving clinic.
@@ -384,10 +369,14 @@ export default function HODAtRisk() {
                     fontSize: '0.8125rem',
                   }}
                 >
-                  <option value="Dr. Priya Raman">Dr. Priya Raman (Associate Professor & Sem 5 Advisor)</option>
-                  <option value="Prof. Ananya Sen">Prof. Ananya Sen (Assistant Professor)</option>
-                  <option value="Prof. S. Venkatesh">Prof. S. Venkatesh (Mathematics Advisor)</option>
-                  <option value="Dr. Rajesh K.">Dr. Rajesh K. (Lab In-Charge)</option>
+                  {(facultyMembers || []).map((f) => (
+                    <option key={f.id || f.name} value={f.name}>
+                      {f.name} ({f.designation || f.role || 'Faculty'})
+                    </option>
+                  ))}
+                  {(!facultyMembers || facultyMembers.length === 0) && (
+                    <option value="">No faculty mentors available</option>
+                  )}
                 </select>
               </div>
 

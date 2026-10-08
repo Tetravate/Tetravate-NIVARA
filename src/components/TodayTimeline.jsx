@@ -109,9 +109,8 @@ export default function TodayTimeline({ onBack }) {
           title: 'Study Window & Library Resource Access',
           duration: '1h 30m',
           suggestions: [
-            { icon: BookOpen, text: 'Review Chapter 4 Graph Algorithms lecture notes in Course Repository' },
+            { icon: BookOpen, text: 'Campus Library & Resource Center open for quiet study' },
             { icon: Coffee, text: 'Central Campus Canteen & Cafeteria (Student Center Block)' },
-            { icon: Check, text: 'Complete Min-Heap Priority Queue deliverables due tomorrow' },
           ],
         });
 

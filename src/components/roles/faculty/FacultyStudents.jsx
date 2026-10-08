@@ -10,6 +10,7 @@ import { PageHeader, MetricStrip, EmptyState } from '../../workspace';
 export default function FacultyStudents() {
   const {
     students,
+    studentLeaves,
   } = useNivara();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -351,9 +352,13 @@ export default function FacultyStudents() {
                 </strong>
 
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
-                  {selectedStudentDetail.id === '2024-AIDS-042'
-                    ? '1 Approved Duty Leave: Hackathon Delegation (11 Oct – 12 Oct · 2 Days) with Attendance Concession (+3% credit applied).'
-                    : 'No sanctioned duty or medical leaves on file for the active semester.'}
+                  {(() => {
+                    const studentLeave = (studentLeaves || []).find((l) => l.studentId === selectedStudentDetail.id);
+                    if (studentLeave) {
+                      return `${studentLeave.status === 'approved' ? 'Approved' : 'Pending'} Leave: ${studentLeave.reason} (${studentLeave.startDate} – ${studentLeave.endDate} · ${studentLeave.days} Days)${studentLeave.dutyAttendanceGranted ? ' with Attendance Concession applied.' : '.'}`;
+                    }
+                    return 'No sanctioned duty or medical leaves on file for the active semester.';
+                  })()}
                 </div>
               </div>
 

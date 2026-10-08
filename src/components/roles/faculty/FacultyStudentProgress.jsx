@@ -50,28 +50,21 @@ export default function FacultyStudentProgress() {
         });
       }
 
-      // Specific known students in demo data with missing work
-      if (st.rollNo === '22AIDS014' || st.roll === '22AIDS014' || st.name.includes('Kavin')) {
-        risks.push({
-          type: 'missing-asg',
-          severity: 'warning',
-          label: 'Unsubmitted: C++ Graph Traversal',
-          detail: 'Deliverable overdue by 24 hours. Awaiting laboratory submission.',
-        });
-        risks.push({
-          type: 'low-cia',
-          severity: 'warning',
-          label: 'CIA Score: 17 / 25',
-          detail: 'Moderate continuous assessment performance.',
-        });
-      }
-
-      if (st.rollNo === '22AIDS027' || st.roll === '22AIDS027' || st.name.includes('Tanvi')) {
+      if (st.ciaScore !== undefined && st.ciaScore < 15) {
         risks.push({
           type: 'low-cia',
           severity: 'urgent',
-          label: 'CIA Score: 14 / 25',
+          label: `Low CIA (${st.ciaScore} / 25)`,
           detail: 'Below minimum departmental internal benchmark (15/25).',
+        });
+      }
+
+      if (st.backlogs && st.backlogs > 0) {
+        risks.push({
+          type: 'backlogs',
+          severity: 'warning',
+          label: `${st.backlogs} Active Backlog(s)`,
+          detail: 'Requires academic counseling and remedial support.',
         });
       }
 

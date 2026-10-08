@@ -19,24 +19,27 @@ export default function FacultyHome() {
     leaveRequests,
     students,
     announcements,
+    timetableEntries,
     setActiveTab,
     approveLeaveRequest,
   } = useNivara();
 
-  const facultyName = currentUser?.userName || 'Dr. Priya Raman';
-  const facultyDept = currentUser?.dept || 'AI & Data Science';
+  const facultyName = currentUser?.userName || currentUser?.name || 'Faculty Member';
+  const facultyDept = currentUser?.dept || currentUser?.department || 'Academic Department';
 
-  // Active / next class
-  const activeClass = {
-    code: 'CS301',
-    subject: 'Data Structures & Algorithms',
-    section: 'III B.Tech AI & DS (Sec A)',
-    room: 'Computing Lab 2 (Block B)',
-    timeSlot: '10:00 AM – 11:30 AM',
-    enrolledCount: 28,
+  const todaySessions = (timetableEntries || []).filter((e) => e.dayOfWeek === 'Tuesday');
+  const liveSession = todaySessions.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || (todaySessions.length > 0 ? todaySessions[0] : null);
+
+  const activeClass = liveSession ? {
+    code: liveSession.courseCode || liveSession.code || 'CS301',
+    subject: liveSession.subjectName || liveSession.subject || 'Class Session',
+    section: liveSession.sectionCode || 'Section A',
+    room: liveSession.room || 'Lecture Hall',
+    timeSlot: liveSession.timeSlot || '10:00 AM – 11:30 AM',
+    enrolledCount: facultyRoster?.length || 0,
     status: 'in-session',
-    topic: 'Dijkstra Min-Heap Implementation & Benchmarking',
-  };
+    topic: 'Course Curriculum Session',
+  } : null;
 
   // 2. NEEDS ACTION METRICS & ITEMS
   const presentCount = (facultyRoster || []).filter((s) => s.status === 'present').length;
@@ -91,57 +94,73 @@ export default function FacultyHome() {
         {/* LEFT COLUMN: TODAY & ACTIVE SESSION */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Active Class Highlight Callout */}
-          <section style={{
-            padding: '1.15rem 1.25rem',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border-strong)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="badge badge-info">
-                  <span className="pulse-dot" /> Live In-Session
-                </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {activeClass.timeSlot}
-                </span>
+          {activeClass ? (
+            <section style={{
+              padding: '1.15rem 1.25rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border-strong)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="badge badge-info">
+                    <span className="pulse-dot" /> Live In-Session
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    {activeClass.timeSlot}
+                  </span>
+                </div>
+                <span className="badge badge-neutral">{activeClass.section}</span>
               </div>
-              <span className="badge badge-neutral">{activeClass.section}</span>
-            </div>
 
-            <div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {activeClass.subject} ({activeClass.code})
+              <div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {activeClass.subject} ({activeClass.code})
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MapPin size={12} /> {activeClass.room}
+                  </span>
+                  <span>•</span>
+                  <span>{activeClass.enrolledCount} Enrolled Students</span>
+                  <span>•</span>
+                  <span>Topic: {activeClass.topic}</span>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <MapPin size={12} /> {activeClass.room}
-                </span>
-                <span>•</span>
-                <span>{activeClass.enrolledCount} Enrolled Students</span>
-                <span>•</span>
-                <span>Topic: {activeClass.topic}</span>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Session roster: <strong>{presentCount} Present</strong>, <strong>{absentCount} Absent</strong>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Session roster: <strong>{presentCount} Present</strong>, <strong>{absentCount} Absent</strong>
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setActiveTab('attendance')}
+                  >
+                    <Zap size={12} /> Record Classroom Roster
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setActiveTab('attendance')}
-                >
-                  <Zap size={12} /> Record Classroom Roster
-                </button>
+            </section>
+          ) : (
+            <section style={{
+              padding: '1.25rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border-subtle)',
+            }}>
+              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                No Active Class In Session
               </div>
-            </div>
-          </section>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                You have no active teaching lectures or laboratory sessions running at this time slot.
+              </div>
+            </section>
+          )}
 
           {/* Today's Teaching Stream */}
           <section>
@@ -160,67 +179,44 @@ export default function FacultyHome() {
             />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{
-                padding: '0.85rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    09:00 AM — Data Structures (CS301)
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Room A204 · III Year AI & DS · 28 Students
-                  </div>
+              {todaySessions.length === 0 ? (
+                <div style={{
+                  padding: '1.25rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                }}>
+                  No teaching sessions scheduled for today in the academic timetable.
                 </div>
-                <span className="badge badge-success">Conducted ✓</span>
-              </div>
-
-              <div style={{
-                padding: '0.85rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-hover)',
-                border: '1px solid var(--border-strong)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    10:00 AM — Data Structures Practical Lab (CS301)
+              ) : (
+                todaySessions.map((session, idx) => (
+                  <div key={idx} style={{
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: idx === 1 ? 'var(--bg-hover)' : 'var(--bg-surface)',
+                    border: '1px solid',
+                    borderColor: idx === 1 ? 'var(--border-strong)' : 'var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {session.timeSlot || session.time} — {session.subjectName || session.subject} ({session.courseCode || session.code})
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {session.room} · {session.sectionCode || 'Section A'} · {facultyRoster?.length || 0} Students
+                      </div>
+                    </div>
+                    <span className={`badge ${idx === 0 ? 'badge-success' : idx === 1 ? 'badge-info' : 'badge-neutral'}`}>
+                      {idx === 0 ? 'Conducted ✓' : idx === 1 ? 'In Progress' : 'Scheduled'}
+                    </span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Computing Lab 2 · Batch A · 28 Students
-                  </div>
-                </div>
-                <span className="badge badge-info">
-                  <span className="pulse-dot" /> In Progress
-                </span>
-              </div>
-
-              <div style={{
-                padding: '0.85rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    02:15 PM — Machine Learning Foundations Lab (AI302)
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    AI Computing Lab 1 · Batch A · 28 Students
-                  </div>
-                </div>
-                <span className="badge badge-neutral">Scheduled</span>
-              </div>
+                ))
+              )}
             </div>
           </section>
 

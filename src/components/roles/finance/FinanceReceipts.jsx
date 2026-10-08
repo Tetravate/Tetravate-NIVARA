@@ -246,7 +246,7 @@ export default function FinanceReceipts() {
               {/* Verification Seal */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--state-success)', color: 'var(--state-success)', fontSize: '0.6875rem' }}>
                 <ShieldCheck size={16} />
-                <span>Digitally signed & reconciled by Mrs. S. Mythili (Accounts Bursar). Cryptographic hash verified.</span>
+                <span>Digitally signed & reconciled by Finance Accounts Directorate. Cryptographic hash verified.</span>
               </div>
 
               {/* Actions */}

@@ -20,12 +20,12 @@ import { PageHeader, MetricStrip, SectionHeader, EmptyState, DataTable } from '.
 export default function SmartAttendance({ onBack }) {
   const { coursesAttendance, students, currentUser, setActiveTab } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
   const [courseFilter, setCourseFilter] = useState('all'); // 'all' | 'warning' | 'safe'
   const [selectedCourseCode, setSelectedCourseCode] = useState(
-    coursesAttendance[2]?.code || coursesAttendance[0]?.code
+    coursesAttendance[0]?.code || ''
   );
   const [missCount, setMissCount] = useState(1);
   const [attendCount, setAttendCount] = useState(0);
@@ -35,20 +35,7 @@ export default function SmartAttendance({ onBack }) {
   const [historyStatus, setHistoryStatus] = useState('ALL');
 
   // Chronological attendance roster records for the active student
-  const attendanceHistoryRecords = [
-    { id: 'att-log-1', date: '07 Oct 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
-    { id: 'att-log-2', date: '06 Oct 2026', time: '02:00 PM – 03:30 PM', code: 'CS304', subject: 'Database Management Systems', faculty: 'Dr. K. Mohan', room: 'Room B104', status: 'present' },
-    { id: 'att-log-3', date: '06 Oct 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'absent' },
-    { id: 'att-log-4', date: '05 Oct 2026', time: '08:30 AM – 10:00 AM', code: 'MA301', subject: 'Discrete Structures', faculty: 'Prof. S. Venkatesh', room: 'Room A204', status: 'present' },
-    { id: 'att-log-5', date: '03 Oct 2026', time: '02:00 PM – 04:00 PM', code: 'AI302', subject: 'Machine Learning Foundations Lab', faculty: 'Dr. Rajesh K.', room: 'AI Lab 1', status: 'present' },
-    { id: 'att-log-6', date: '02 Oct 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'on_duty' },
-    { id: 'att-log-7', date: '01 Oct 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
-    { id: 'att-log-8', date: '30 Sep 2026', time: '02:00 PM – 03:30 PM', code: 'CS304', subject: 'Database Management Systems', faculty: 'Dr. K. Mohan', room: 'Room B104', status: 'present' },
-    { id: 'att-log-9', date: '29 Sep 2026', time: '08:30 AM – 10:00 AM', code: 'MA301', subject: 'Discrete Structures', faculty: 'Prof. S. Venkatesh', room: 'Room A204', status: 'present' },
-    { id: 'att-log-10', date: '26 Sep 2026', time: '02:00 PM – 04:00 PM', code: 'AI302', subject: 'Machine Learning Foundations Lab', faculty: 'Dr. Rajesh K.', room: 'AI Lab 1', status: 'present' },
-    { id: 'att-log-11', date: '25 Sep 2026', time: '10:30 AM – 12:00 PM', code: 'CS302', subject: 'Object-Oriented Programming', faculty: 'Prof. Ananya Sen', room: 'Room C302', status: 'absent' },
-    { id: 'att-log-12', date: '24 Sep 2026', time: '10:00 AM – 11:30 AM', code: 'CS301', subject: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', room: 'Computing Lab 2', status: 'present' },
-  ];
+  const attendanceHistoryRecords = Array.isArray(student?.attendanceHistory) ? student.attendanceHistory : [];
 
   const filteredHistory = attendanceHistoryRecords.filter((rec) => {
     if (historySubject !== 'ALL' && rec.code !== historySubject) return false;
@@ -57,14 +44,14 @@ export default function SmartAttendance({ onBack }) {
   });
 
   const selectedSubject =
-    coursesAttendance.find((c) => c.code === selectedCourseCode) || coursesAttendance[0];
+    coursesAttendance.find((c) => c.code === selectedCourseCode) || coursesAttendance[0] || null;
 
   // Aggregate attendance math derived directly from live course logs
-  const totalAttended = coursesAttendance.reduce((acc, c) => acc + c.attended, 0);
-  const totalConducted = coursesAttendance.reduce((acc, c) => acc + c.total, 0);
-  const totalAbsent = totalConducted - totalAttended;
-  const overallPercentage = totalConducted > 0 ? Math.round((totalAttended / totalConducted) * 100) : (student.attendancePct || 87);
-  const safeBuffer = overallPercentage - 75;
+  const totalAttended = coursesAttendance.reduce((acc, c) => acc + (c.attended || 0), 0);
+  const totalConducted = coursesAttendance.reduce((acc, c) => acc + (c.total || 0), 0);
+  const totalAbsent = Math.max(0, totalConducted - totalAttended);
+  const overallPercentage = totalConducted > 0 ? Math.round((totalAttended / totalConducted) * 100) : (student?.attendancePct || 0);
+  const safeBuffer = overallPercentage > 0 ? overallPercentage - 75 : 0;
 
   // Selected subject simulator math
   const currentAttended = selectedSubject?.attended || 0;

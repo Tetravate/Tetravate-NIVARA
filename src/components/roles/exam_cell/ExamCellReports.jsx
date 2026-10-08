@@ -12,6 +12,7 @@ import { PageHeader, MetricStrip, SectionHeader, DataTable } from '../../workspa
 
 export default function ExamCellReports() {
   const {
+    departments,
     examSessions,
     internalMarks,
     publishedResults,
@@ -22,12 +23,16 @@ export default function ExamCellReports() {
   const [activeReportTab, setActiveReportTab] = useState('performance');
 
   // Report 1: Department Performance Summary
-  const departmentReportData = [
-    { dept: 'Artificial Intelligence & Data Science', code: 'AIDS', enrolled: 42, evaluated: 42, passed: 40, arrears: 2, passPct: '95.2%', avgCgpa: 8.74 },
-    { dept: 'Computer Science & Engineering', code: 'CSE', enrolled: 60, evaluated: 60, passed: 57, arrears: 3, passPct: '95.0%', avgCgpa: 8.62 },
-    { dept: 'Electronics & Communication Eng.', code: 'ECE', enrolled: 55, evaluated: 55, passed: 50, arrears: 5, passPct: '90.9%', avgCgpa: 8.35 },
-    { dept: 'Mechanical Engineering', code: 'MECH', enrolled: 48, evaluated: 48, passed: 43, arrears: 5, passPct: '89.6%', avgCgpa: 8.15 },
-  ];
+  const departmentReportData = (departments || []).map((d) => ({
+    dept: d.name,
+    code: d.code,
+    enrolled: d.studentCount || 0,
+    evaluated: d.studentCount || 0,
+    passed: Math.round(((d.studentCount || 0) * (d.passPct || 100)) / 100),
+    arrears: Math.max(0, (d.studentCount || 0) - Math.round(((d.studentCount || 0) * (d.passPct || 100)) / 100)),
+    passPct: `${d.passPct || 100}%`,
+    avgCgpa: d.avgCgpa || 0,
+  }));
 
   // Report 2: Timetable & Venue Utilization
   const venueReportData = (examSessions || []).map((ex) => ({
@@ -36,9 +41,9 @@ export default function ExamCellReports() {
     date: ex.dateFormatted,
     time: ex.time,
     venue: ex.venue,
-    capacity: ex.capacity || 64,
-    registered: ex.registeredCount || 45,
-    utilization: `${Math.round(((ex.registeredCount || 45) / (ex.capacity || 64)) * 100)}%`,
+    capacity: ex.capacity || 0,
+    registered: ex.registeredCount || 0,
+    utilization: (ex.capacity || 0) > 0 ? `${Math.round(((ex.registeredCount || 0) / ex.capacity) * 100)}%` : '0%',
     status: ex.status || 'Scheduled',
   }));
 

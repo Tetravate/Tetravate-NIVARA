@@ -15,11 +15,15 @@ import { PageHeader, MetricStrip, SectionHeader, EmptyState } from '../../worksp
 export default function FacultyAttendance() {
   const {
     facultyRoster,
+    coursesAttendance,
+    students,
     markAttendance,
     showToast,
   } = useNivara();
 
-  const [selectedCourse, setSelectedCourse] = useState('CS301');
+  const [selectedCourse, setSelectedCourse] = useState(
+    (coursesAttendance && coursesAttendance[0]?.code) || ''
+  );
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedSession, setSelectedSession] = useState('09:00 AM - 10:30 AM (Lecture 1)');
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,49 +33,25 @@ export default function FacultyAttendance() {
   const [localRoster, setLocalRoster] = useState(facultyRoster || []);
 
   // History log of recorded attendance sessions
-  const [sessionHistory, setSessionHistory] = useState([
-    {
-      id: 'sess-1',
-      courseCode: 'CS301',
-      courseName: 'Data Structures & Algorithms',
-      date: '2026-10-07',
-      sessionSlot: '09:00 AM - 10:30 AM',
-      presentCount: 25,
-      absentCount: 3,
-      recordedAt: '07 Oct 2026, 09:35 AM',
-      synced: true,
-    },
-    {
-      id: 'sess-2',
-      courseCode: 'AI302',
-      courseName: 'Machine Learning Foundations Lab',
-      date: '2026-10-06',
-      sessionSlot: '02:00 PM - 04:30 PM',
-      presentCount: 27,
-      absentCount: 1,
-      recordedAt: '06 Oct 2026, 02:20 PM',
-      synced: true,
-    },
-    {
-      id: 'sess-3',
-      courseCode: 'CS301',
-      courseName: 'Data Structures & Algorithms',
-      date: '2026-10-05',
-      sessionSlot: '09:00 AM - 10:30 AM',
-      presentCount: 26,
-      absentCount: 2,
-      recordedAt: '05 Oct 2026, 09:40 AM',
-      synced: true,
-    },
-  ]);
+  const [sessionHistory, setSessionHistory] = useState([]);
 
-  const courses = [
-    { code: 'CS301', name: 'Data Structures & Algorithms', section: 'AIDS-A-SEM5', room: 'Computing Lab 2', count: 28 },
-    { code: 'AI302', name: 'Machine Learning Foundations Lab', section: 'AIDS-A-SEM5', room: 'AI Computing Lab 1', count: 28 },
-    { code: 'AI308', name: 'Deep Learning & Neural Architectures', section: 'AIDS-B-SEM5', room: 'Hall B204', count: 32 },
-  ];
+  const courses = (coursesAttendance || []).length > 0
+    ? coursesAttendance.map((c) => ({
+        code: c.code,
+        name: c.name,
+        section: c.section || '',
+        room: c.room || 'Lecture Hall',
+        count: (facultyRoster || []).length,
+      }))
+    : [];
 
-  const currentCourseMeta = courses.find((c) => c.code === selectedCourse) || courses[0];
+  const currentCourseMeta = courses.find((c) => c.code === selectedCourse) || courses[0] || {
+    code: selectedCourse,
+    name: selectedCourse,
+    section: '',
+    room: '',
+    count: (facultyRoster || []).length,
+  };
 
   // Check for duplicate session record
   const existingRecord = useMemo(() => {
@@ -98,8 +78,8 @@ export default function FacultyAttendance() {
       if (statusFilter === 'present') return st.status === 'present';
       if (statusFilter === 'absent') return st.status === 'absent';
       if (statusFilter === 'at-risk') {
-        // Students with known low attendance (e.g. absent currently or flagged)
-        return st.status === 'absent' || st.roll === '22AIDS014' || st.roll === '22AIDS027';
+        const studentRecord = (students || []).find((s) => s.id === st.id || s.rollNo === st.roll || s.roll === st.roll);
+        return st.status === 'absent' || (studentRecord ? (studentRecord.attendancePct < 75 || studentRecord.backlogs > 0) : false);
       }
       return true;
     });
@@ -394,7 +374,8 @@ export default function FacultyAttendance() {
           >
             {filteredRoster.map((st) => {
               const isPresent = st.status === 'present';
-              const isAtRisk = st.roll === '22AIDS014' || st.roll === '22AIDS027';
+              const studentRecord = (students || []).find((s) => s.id === st.id || s.rollNo === st.roll || s.roll === st.roll);
+              const isAtRisk = studentRecord ? (studentRecord.attendancePct < 75 || studentRecord.backlogs > 0) : false;
 
               return (
                 <div

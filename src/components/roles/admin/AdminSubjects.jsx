@@ -19,17 +19,18 @@ export default function AdminSubjects() {
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('all');
 
   // Master subjects catalog seeded from live courses
-  const [subjectsList, setSubjectsList] = useState([
-    { code: 'CS301', name: 'Database Management Systems', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, credits: 4, ltp: '3-0-2', type: 'Professional Core' },
-    { code: 'AI302', name: 'Machine Learning', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, credits: 4, ltp: '3-1-0', type: 'Professional Core' },
-    { code: 'CS304', name: 'Data Structures & Algorithms', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, credits: 4, ltp: '3-0-2', type: 'Engineering Science' },
-    { code: 'MA301', name: 'Probability & Statistics', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, credits: 3, ltp: '3-0-0', type: 'Basic Science' },
-    { code: 'CS302', name: 'Computer Networks', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, credits: 3, ltp: '3-0-0', type: 'Professional Core' },
-    { code: 'CS501', name: 'Advanced Operating Systems', deptCode: 'CSE', deptName: 'Computer Science & Engg', semester: 5, credits: 4, ltp: '3-0-2', type: 'Professional Core' },
-    { code: 'EC402', name: 'VLSI Digital Signal Processing', deptCode: 'ECE', deptName: 'Electronics & Comm', semester: 5, credits: 4, ltp: '3-1-0', type: 'Professional Core' },
-    { code: 'ME301', name: 'Finite Element Analysis', deptCode: 'MECH', deptName: 'Mechanical Engineering', semester: 5, credits: 4, ltp: '3-0-2', type: 'Professional Core' },
-    { code: 'CE401', name: 'Structural Dynamics', deptCode: 'CIVIL', deptName: 'Civil Engineering', semester: 5, credits: 4, ltp: '3-1-0', type: 'Professional Core' },
-  ]);
+  const [subjectsList, setSubjectsList] = useState(() => {
+    return (coursesAttendance || []).map((c) => ({
+      code: c.code,
+      name: c.name,
+      deptCode: c.deptCode || 'AIDS',
+      deptName: c.deptName || 'AI & Data Science',
+      semester: c.semester || 5,
+      credits: c.credits || 4,
+      ltp: c.ltp || '3-0-2',
+      type: c.type || 'Professional Core',
+    }));
+  });
 
   const [subjectForm, setSubjectForm] = useState({
     code: '',

@@ -20,7 +20,7 @@ export default function PrincipalPlacements() {
   const totalApplications = (placementDrives || []).reduce((acc, d) => acc + (d.appliedCount || 0), 0);
 
   const avgPlacedPct = useMemo(() => {
-    if (!departments || departments.length === 0) return 82;
+    if (!departments || departments.length === 0) return 0;
     const sum = departments.reduce((acc, d) => acc + (d.placedPct || 0), 0);
     return Math.round(sum / departments.length);
   }, [departments]);

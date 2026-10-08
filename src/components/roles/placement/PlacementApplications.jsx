@@ -50,12 +50,12 @@ export default function PlacementApplications({ onNavigate }) {
 
       return {
         ...app,
-        studentCgpa: student.cgpa || 8.0,
+        studentCgpa: student.cgpa || 0,
         studentBacklogs: student.backlogs || 0,
-        studentDept: student.department || student.deptCode || 'AIDS',
-        studentRollNo: student.rollNo || '22AIDS042',
-        drivePackage: drive.packageLpa || app.packageLpa || '20+ LPA',
-        driveRole: drive.role || app.role,
+        studentDept: student.department || student.deptCode || '',
+        studentRollNo: student.rollNo || student.roll || '',
+        drivePackage: drive.packageLpa || app.packageLpa || '',
+        driveRole: drive.role || app.role || '',
       };
     });
   }, [studentPlacementApplications, students, placementDrives]);

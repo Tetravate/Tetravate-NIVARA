@@ -25,7 +25,7 @@ export default function AssignmentsView({ onBack }) {
   const [submissionNotes, setSubmissionNotes] = useState('');
   const [repoLink, setRepoLink] = useState('');
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
 
   // Derived metrics
   const totalCount = assignments.length;
@@ -38,7 +38,7 @@ export default function AssignmentsView({ onBack }) {
     {
       label: 'Deliverables Assigned',
       value: `${totalCount} Tasks`,
-      subtext: 'Autumn 2026 Curriculum',
+      subtext: totalCount > 0 ? 'Assigned Academic Coursework' : 'No Active Coursework',
       state: 'info',
     },
     {
@@ -90,7 +90,7 @@ export default function AssignmentsView({ onBack }) {
       setRepoLink(existingSub.notes);
       setSubmissionNotes('');
     } else {
-      setRepoLink('https://github.com/aadhi-narayanan/assignment-solution');
+      setRepoLink('');
       setSubmissionNotes('');
     }
   };
@@ -396,7 +396,7 @@ export default function AssignmentsView({ onBack }) {
                 </label>
                 <input
                   type="url"
-                  placeholder="https://github.com/aadhi-narayanan/assignment-solution"
+                  placeholder="https://github.com/student/assignment-solution"
                   value={repoLink}
                   onChange={(e) => setRepoLink(e.target.value)}
                   required

@@ -14,6 +14,7 @@ export default function FacultyMaterials() {
     courseMaterials,
     uploadCourseMaterial,
     currentUser,
+    coursesAttendance,
     showToast,
   } = useNivara();
 
@@ -25,14 +26,14 @@ export default function FacultyMaterials() {
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    courseCode: 'CS301',
-    subjectName: 'Data Structures & Algorithms',
+    courseCode: '',
+    subjectName: '',
     materialType: 'lecture_notes',
     description: '',
-    fileName: 'cs301_lecture_unit4.pdf',
-    fileUrl: 'https://nivara-storage.local/courseware/cs301_lecture_unit4.pdf',
-    fileSizeKb: 3400,
-    sectionCode: 'AIDS-A-SEM5',
+    fileName: '',
+    fileUrl: '',
+    fileSizeKb: 0,
+    sectionCode: '',
     visibility: 'enrolled_class',
   });
 
@@ -44,13 +45,12 @@ export default function FacultyMaterials() {
   ];
 
   const facultyMaterials = useMemo(() => {
+    const facultyName = currentUser?.userName || '';
     return (courseMaterials || []).filter((m) => {
       return (
-        m.courseCode === 'CS301' ||
-        m.courseCode === 'AI302' ||
-        m.courseCode === 'AI308' ||
-        m.facultyName?.includes('Priya Raman') ||
-        m.facultyName === currentUser?.userName
+        !facultyName ||
+        m.facultyName === facultyName ||
+        m.facultyName?.includes(facultyName)
       );
     });
   }, [courseMaterials, currentUser]);
@@ -106,20 +106,20 @@ export default function FacultyMaterials() {
 
     await uploadCourseMaterial({
       ...formData,
-      facultyName: currentUser?.userName || 'Dr. Priya Raman',
+      facultyName: currentUser?.userName || 'Faculty',
     });
 
     setUploadModalOpen(false);
     setFormData({
       title: '',
-      courseCode: 'CS301',
-      subjectName: 'Data Structures & Algorithms',
+      courseCode: (coursesAttendance && coursesAttendance[0]?.code) || '',
+      subjectName: (coursesAttendance && coursesAttendance[0]?.name) || '',
       materialType: 'lecture_notes',
       description: '',
-      fileName: 'cs301_resource.pdf',
-      fileUrl: 'https://nivara-storage.local/courseware/cs301_resource.pdf',
-      fileSizeKb: 2800,
-      sectionCode: 'AIDS-A-SEM5',
+      fileName: '',
+      fileUrl: '',
+      fileSizeKb: 0,
+      sectionCode: '',
       visibility: 'enrolled_class',
     });
   };

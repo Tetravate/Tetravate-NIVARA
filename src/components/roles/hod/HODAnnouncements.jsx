@@ -19,6 +19,8 @@ export default function HODAnnouncements() {
     announcements,
     publishAnnouncement,
     currentUser,
+    students,
+    facultyMembers,
     showToast,
   } = useNivara();
 
@@ -38,13 +40,13 @@ export default function HODAnnouncements() {
   const deptAnnouncements = useMemo(() => {
     return (announcements || []).filter((a) => {
       return (
-        a.targetDept === 'AIDS' ||
+        a.targetDept === (currentUser?.deptCode || 'AIDS') ||
         a.targetDept === 'ALL' ||
         a.publishedRole === 'hod' ||
-        a.publishedBy?.includes('K. Mohan')
+        (currentUser?.userName && a.publishedBy?.includes(currentUser.userName))
       );
     });
-  }, [announcements]);
+  }, [announcements, currentUser]);
 
   const filteredAnnouncements = useMemo(() => {
     return deptAnnouncements.filter((a) => {
@@ -57,25 +59,33 @@ export default function HODAnnouncements() {
   }, [deptAnnouncements, searchQuery]);
 
   const publishedByHOD = deptAnnouncements.filter(
-    (a) => a.publishedRole === 'hod' || a.publishedBy?.includes('K. Mohan')
+    (a) => a.publishedRole === 'hod' || (currentUser?.userName && a.publishedBy?.includes(currentUser.userName))
+  ).length;
+
+  const deptStudentsCount = (students || []).filter(
+    (s) => s.deptCode === (currentUser?.deptCode || 'AIDS') || s.department?.includes('AI & Data Science')
+  ).length;
+
+  const deptFacultyCount = (facultyMembers || []).filter(
+    (f) => f.deptCode === (currentUser?.deptCode || 'AIDS') || f.department?.includes('AI & Data Science')
   ).length;
 
   const metrics = [
     {
       label: 'Department Circulars',
       value: `${publishedByHOD} Published`,
-      subtext: 'By Dr. K. Mohan (HOD)',
+      subtext: currentUser?.userName ? `By ${currentUser.userName} (HOD)` : 'By Head of Department',
       state: 'info',
     },
     {
       label: 'Undergraduate Reach',
-      value: '380 Students',
-      subtext: 'B.Tech AI & Data Science (Y1–Y4)',
+      value: `${deptStudentsCount} Students`,
+      subtext: 'Department Cohort Scope',
       state: 'success',
     },
     {
       label: 'Instructional Staff Reach',
-      value: '14 Faculty',
+      value: `${deptFacultyCount} Faculty`,
       subtext: 'Department Faculty Council',
       state: 'neutral',
     },
@@ -98,11 +108,11 @@ export default function HODAnnouncements() {
       title: `[Dept Directive] ${formData.title}`,
       content: formData.content,
       scope: 'department',
-      targetDept: 'AIDS',
+      targetDept: currentUser?.deptCode || 'AIDS',
       targetSection: 'ALL',
       targetRole: formData.targetAudience === 'FACULTY' ? 'faculty' : 'student',
       priority: formData.priority,
-      publishedBy: currentUser?.userName || 'Dr. K. Mohan',
+      publishedBy: currentUser?.userName || 'Head of Department',
       publishedRole: 'hod',
     });
 
@@ -186,7 +196,7 @@ export default function HODAnnouncements() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {filteredAnnouncements.map((anc) => {
             const isHighPriority = anc.priority === 'high';
-            const isByHOD = anc.publishedRole === 'hod' || anc.publishedBy?.includes('K. Mohan');
+            const isByHOD = anc.publishedRole === 'hod' || (currentUser?.userName && anc.publishedBy?.includes(currentUser.userName));
 
             return (
               <div

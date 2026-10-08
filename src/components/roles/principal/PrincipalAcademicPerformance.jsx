@@ -22,30 +22,35 @@ export default function PrincipalAcademicPerformance() {
     return (departments || []).filter((d) => d.code === selectedDeptFilter);
   }, [departments, selectedDeptFilter]);
 
-  const institutionalPassPct = publishedResults?.departmentPassPct || 88.4;
+  const institutionalPassPct = publishedResults?.departmentPassPct || 0;
+  const studentCount = (students || []).length;
+  const totalCgpa = (students || []).reduce((sum, s) => sum + (s.cgpa || 0), 0);
+  const meanCgpa = studentCount > 0 ? (totalCgpa / studentCount).toFixed(2) : '0.00';
+  const distinctionCount = (students || []).filter((s) => (s.cgpa || 0) >= 8.5).length;
+  const distinctionPct = studentCount > 0 ? Math.round((distinctionCount / studentCount) * 100) : 0;
 
   const academicMetrics = [
     {
       label: 'Institutional Pass Rate',
       value: `${institutionalPassPct}%`,
-      subtext: 'Autumn 2026 Examination Board',
-      state: 'success',
+      subtext: institutionalPassPct > 0 ? 'Verified Examination Board Rate' : 'Pending Examination Results',
+      state: institutionalPassPct >= 80 ? 'success' : 'neutral',
     },
     {
       label: 'Institution Mean CGPA',
-      value: '8.34',
-      subtext: 'Grading scale 10.0',
+      value: meanCgpa,
+      subtext: studentCount > 0 ? `Across ${studentCount} students` : 'Grading scale 10.0',
       state: 'neutral',
     },
     {
       label: 'First Class Distinction',
-      value: '64.2%',
+      value: `${distinctionPct}%`,
       subtext: 'CGPA ≥ 8.5 threshold',
-      state: 'info',
+      state: distinctionPct > 0 ? 'info' : 'neutral',
     },
     {
       label: 'Subject Arrears Rate',
-      value: `${(100 - institutionalPassPct).toFixed(1)}%`,
+      value: institutionalPassPct > 0 ? `${(100 - institutionalPassPct).toFixed(1)}%` : '0%',
       subtext: 'Eligible for remedial supplementary',
       state: 'warning',
     },
@@ -53,7 +58,7 @@ export default function PrincipalAcademicPerformance() {
 
   // Students requiring academic attention derived from real rules (backlogs > 0 or CGPA < 7.0)
   const studentsNeedingAttention = useMemo(() => {
-    return (students || []).filter((st) => (st.backlogs || 0) > 0 || (st.cgpa || 8.0) < 7.0);
+    return (students || []).filter((st) => (st.backlogs || 0) > 0 || ((st.cgpa !== undefined && st.cgpa < 7.0)));
   }, [students]);
 
   return (
@@ -208,9 +213,11 @@ export default function PrincipalAcademicPerformance() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span className="badge badge-warning">Remedial Tutorial Mandated</span>
-                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                    Mentor: {st.advisor || 'Dr. Priya Raman'}
-                  </div>
+                  {st.advisor && (
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                      Mentor: {st.advisor}
+                    </div>
+                  )}
                 </div>
               </div>
             ))

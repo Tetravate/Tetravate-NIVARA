@@ -13,48 +13,42 @@ export default function FacultyMarks() {
   const {
     internalMarks,
     updateInternalMarks,
+    students,
     showToast,
   } = useNivara();
 
-  const [selectedCourse, setSelectedCourse] = useState('CS301');
+  const [selectedCourse, setSelectedCourse] = useState(
+    (internalMarks && internalMarks[0]?.courseCode) || 'CS301'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [editingMarks, setEditingMarks] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
-
-  // Roster of students for continuous assessment tabulation
-  const [studentScores, setStudentScores] = useState({
-    'CS301': [
-      { id: '2024-AIDS-001', roll: '22AIDS001', name: 'Aarav Sharma', cia1: 22, cia2: 24, modelExam: 46, attendanceScore: 5, totalCia: 24, status: 'locked' },
-      { id: '2024-AIDS-002', roll: '22AIDS002', name: 'Ananya Iyer', cia1: 24, cia2: 25, modelExam: 48, attendanceScore: 5, totalCia: 25, status: 'locked' },
-      { id: '2024-AIDS-003', roll: '22AIDS003', name: 'Arun Kumar', cia1: 21, cia2: 23, modelExam: 45, attendanceScore: 5, totalCia: 23, status: 'locked' },
-      { id: '2024-AIDS-014', roll: '22AIDS014', name: 'Kavin Venkatesh', cia1: 15, cia2: 17, modelExam: 32, attendanceScore: 3, totalCia: 17, status: 'draft' },
-      { id: '2024-AIDS-018', roll: '22AIDS018', name: 'Naveen Roy', cia1: 18, cia2: 19, modelExam: 38, attendanceScore: 4, totalCia: 19, status: 'draft' },
-      { id: '2024-AIDS-027', roll: '22AIDS027', name: 'Tanvi Saxena', cia1: 14, cia2: 16, modelExam: 30, attendanceScore: 3, totalCia: 16, status: 'draft' },
-      { id: '2024-AIDS-042', roll: '22AIDS042', name: 'Aadhi Narayanan', cia1: 23, cia2: 24, modelExam: 47, attendanceScore: 5, totalCia: 23, status: 'locked' },
-    ],
-    'AI302': [
-      { id: '2024-AIDS-001', roll: '22AIDS001', name: 'Aarav Sharma', cia1: 23, cia2: 23, modelExam: 45, attendanceScore: 5, totalCia: 24, status: 'draft' },
-      { id: '2024-AIDS-002', roll: '22AIDS002', name: 'Ananya Iyer', cia1: 25, cia2: 25, modelExam: 49, attendanceScore: 5, totalCia: 25, status: 'draft' },
-      { id: '2024-AIDS-003', roll: '22AIDS003', name: 'Arun Kumar', cia1: 22, cia2: 24, modelExam: 46, attendanceScore: 5, totalCia: 23, status: 'draft' },
-      { id: '2024-AIDS-042', roll: '22AIDS042', name: 'Aadhi Narayanan', cia1: 24, cia2: 25, modelExam: 48, attendanceScore: 5, totalCia: 24, status: 'draft' },
-    ],
-    'AI308': [
-      { id: '2024-AIDS-001', roll: '22AIDS001', name: 'Aarav Sharma', cia1: 20, cia2: 22, modelExam: 42, attendanceScore: 5, totalCia: 22, status: 'draft' },
-      { id: '2024-AIDS-042', roll: '22AIDS042', name: 'Aadhi Narayanan', cia1: 22, cia2: 23, modelExam: 44, attendanceScore: 5, totalCia: 22, status: 'draft' },
-    ],
-  });
+  const [studentScores, setStudentScores] = useState({});
 
   const currentCourseMeta = (internalMarks || []).find((m) => m.courseCode === selectedCourse) || {
     courseCode: selectedCourse,
-    subject: selectedCourse === 'CS301' ? 'Data Structures & Algorithms' : selectedCourse === 'AI302' ? 'Machine Learning Lab' : 'Deep Learning',
+    subject: selectedCourse,
     maxMark: 25,
-    scoredMark: 23,
+    scoredMark: 0,
     status: 'draft',
-    enteredBy: 'Dr. Priya Raman',
+    enteredBy: 'Faculty Evaluator',
   };
 
   const isCourseLocked = currentCourseMeta.status === 'locked';
-  const activeCohortStudents = studentScores[selectedCourse] || [];
+  const activeCohortStudents = useMemo(() => {
+    if (studentScores[selectedCourse]) return studentScores[selectedCourse];
+    return (students || []).map((s) => ({
+      id: s.id,
+      roll: s.rollNo || s.roll || s.id,
+      name: s.name,
+      cia1: 0,
+      cia2: 0,
+      modelExam: 0,
+      attendanceScore: 0,
+      totalCia: 0,
+      status: 'draft',
+    }));
+  }, [studentScores, selectedCourse, students]);
 
   const filteredStudents = useMemo(() => {
     return activeCohortStudents.filter((st) => {
@@ -118,8 +112,10 @@ export default function FacultyMarks() {
     }));
 
     // Save to context
-    const aadhiVal = editingMarks['2024-AIDS-042'] !== undefined ? Number(editingMarks['2024-AIDS-042']) : currentCourseMeta.scoredMark;
-    updateInternalMarks(selectedCourse, aadhiVal, false);
+    const firstScore = activeCohortStudents[0]
+      ? (editingMarks[activeCohortStudents[0].id] !== undefined ? Number(editingMarks[activeCohortStudents[0].id]) : activeCohortStudents[0].totalCia)
+      : currentCourseMeta.scoredMark;
+    updateInternalMarks(selectedCourse, firstScore, false);
     showToast(`Continuous assessment draft saved for ${selectedCourse} ✓`, 'success');
   };
 
@@ -139,8 +135,10 @@ export default function FacultyMarks() {
       [selectedCourse]: updated,
     }));
 
-    const aadhiVal = editingMarks['2024-AIDS-042'] !== undefined ? Number(editingMarks['2024-AIDS-042']) : currentCourseMeta.scoredMark;
-    updateInternalMarks(selectedCourse, aadhiVal, true);
+    const firstScore = activeCohortStudents[0]
+      ? (editingMarks[activeCohortStudents[0].id] !== undefined ? Number(editingMarks[activeCohortStudents[0].id]) : activeCohortStudents[0].totalCia)
+      : currentCourseMeta.scoredMark;
+    updateInternalMarks(selectedCourse, firstScore, true);
   };
 
   const metrics = [

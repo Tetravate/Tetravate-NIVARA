@@ -24,8 +24,8 @@ export default function StudentLeavesView({ onBack }) {
     showToast,
   } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
-  const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+  const student = (students || []).find((s) => (activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser?.email)) || (students || [])[0] || {};
 
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('ALL'); // 'ALL' | 'approved' | 'pending' | 'rejected'
@@ -38,7 +38,7 @@ export default function StudentLeavesView({ onBack }) {
 
   // Filter student's own requests
   const studentLeaves = (leaveRequests || []).filter(
-    (l) => l.studentId === student.id || l.studentName === student.name
+    (l) => (student.id && l.studentId === student.id) || (student.name && l.studentName === student.name) || (activeStudentId && l.studentId === activeStudentId)
   );
 
   const approvedLeaves = studentLeaves.filter((l) => l.status === 'approved');
@@ -241,7 +241,7 @@ export default function StudentLeavesView({ onBack }) {
                     {leave.status !== 'pending' && (
                       <>
                         <span>•</span>
-                        <span>Reviewed by: <strong>{leave.approvedBy || 'Dr. K. Mohan (HOD)'}</strong></span>
+                        <span>Reviewed by: <strong>{leave.approvedBy || 'Department Head'}</strong></span>
                       </>
                     )}
                   </div>

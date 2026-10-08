@@ -44,19 +44,19 @@ export default function PrincipalOverview({ onNavigate }) {
   }, [filteredDepts]);
 
   const avgAttendance = useMemo(() => {
-    if (filteredDepts.length === 0) return 85.0;
+    if (filteredDepts.length === 0) return 0;
     const sum = filteredDepts.reduce((acc, d) => acc + (d.attendancePct || 0), 0);
     return Number((sum / filteredDepts.length).toFixed(1));
   }, [filteredDepts]);
 
   const avgCgpa = useMemo(() => {
-    if (filteredDepts.length === 0) return 8.2;
+    if (filteredDepts.length === 0) return 0;
     const sum = filteredDepts.reduce((acc, d) => acc + (d.avgCgpa || 0), 0);
     return Number((sum / filteredDepts.length).toFixed(2));
   }, [filteredDepts]);
 
   const avgPlacement = useMemo(() => {
-    if (filteredDepts.length === 0) return 80;
+    if (filteredDepts.length === 0) return 0;
     const sum = filteredDepts.reduce((acc, d) => acc + (d.placedPct || 0), 0);
     return Math.round(sum / filteredDepts.length);
   }, [filteredDepts]);
@@ -70,7 +70,7 @@ export default function PrincipalOverview({ onNavigate }) {
     return (feeStructures || []).reduce((acc, f) => acc + (f.totalCollected || 0), 0);
   }, [feeStructures]);
 
-  const realizationRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 87;
+  const realizationRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
 
   const overviewMetrics = [
     {

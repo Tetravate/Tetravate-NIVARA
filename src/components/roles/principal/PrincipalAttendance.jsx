@@ -22,15 +22,20 @@ export default function PrincipalAttendance() {
   }, [departments, selectedDeptFilter]);
 
   const overallAttendance = useMemo(() => {
-    if (!departments || departments.length === 0) return 85.0;
+    if (!departments || departments.length === 0) return 0;
     const sum = departments.reduce((acc, d) => acc + (d.attendancePct || 0), 0);
     return Number((sum / departments.length).toFixed(1));
   }, [departments]);
 
   // Defaulters list across departments (< 75%)
   const defaultersList = useMemo(() => {
-    return (students || []).filter((st) => (st.attendancePct || 85) < 75);
+    return (students || []).filter((st) => (st.attendancePct || 0) < 75);
   }, [students]);
+
+  const studentCount = (students || []).length;
+  const compliantCount = (students || []).filter((st) => (st.attendancePct || 0) >= 75).length;
+  const compliancePct = studentCount > 0 ? Math.round((compliantCount / studentCount) * 100) : 0;
+  const totalSessionsTracked = (coursesAttendance || []).reduce((acc, c) => acc + (c.total || 0), 0);
 
   const attendanceMetrics = [
     {
@@ -41,9 +46,9 @@ export default function PrincipalAttendance() {
     },
     {
       label: 'Autonomous Compliance',
-      value: '93.2%',
-      subtext: 'Students meeting 75% threshold',
-      state: 'success',
+      value: `${compliancePct}%`,
+      subtext: studentCount > 0 ? `${compliantCount} of ${studentCount} meeting 75% threshold` : 'No student records',
+      state: compliancePct >= 80 ? 'success' : 'neutral',
     },
     {
       label: 'Condonation Defaulters',
@@ -53,8 +58,8 @@ export default function PrincipalAttendance() {
     },
     {
       label: 'Class Sessions Tracked',
-      value: '240 Sessions',
-      subtext: 'Autumn 2026 roll call logs',
+      value: `${totalSessionsTracked} Sessions`,
+      subtext: 'Live verified roll call logs',
       state: 'neutral',
     },
   ];
@@ -211,7 +216,7 @@ export default function PrincipalAttendance() {
                     {st.name} <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>({st.id})</span>
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {st.department || 'B.Tech AI & Data Science'} · Section: {st.section || 'A'} · Mentor: {st.advisor || 'Dr. Priya Raman'}
+                    {st.department || 'General'} · Section: {st.section || 'A'}{st.advisor ? ` · Mentor: ${st.advisor}` : ''}
                   </div>
                 </div>
 

@@ -21,7 +21,7 @@ export default function FinanceHome({ onNavigate }) {
   const totalBilled = (feeStructures || []).reduce((acc, f) => acc + (f.totalBilled || 0), 0);
   const totalCollected = (feeStructures || []).reduce((acc, f) => acc + (f.totalCollected || 0), 0);
   const totalOutstanding = Math.max(0, totalBilled - totalCollected);
-  const recoveryPct = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 88;
+  const recoveryPct = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
 
   const pendingStudents = (students || []).filter((s) => s.feeStatus === 'pending');
   const pendingRefunds = (refundRequests || []).filter(
@@ -32,15 +32,15 @@ export default function FinanceHome({ onNavigate }) {
   const financeMetrics = [
     {
       label: 'Total Expected Dues',
-      value: `₹${(totalBilled / 10000000).toFixed(2)} Cr`,
-      subtext: 'Autumn 2026 Statutory Assessment',
+      value: totalBilled > 0 ? `₹${(totalBilled / 10000000).toFixed(2)} Cr` : '₹0.00',
+      subtext: totalBilled > 0 ? 'Autumn 2026 Statutory Assessment' : 'No fee structures scheduled',
       state: 'neutral',
     },
     {
       label: 'Realized Collections',
-      value: `₹${(totalCollected / 10000000).toFixed(2)} Cr`,
-      subtext: `${recoveryPct}% Institutional Recovery`,
-      state: 'success',
+      value: totalCollected > 0 ? `₹${(totalCollected / 10000000).toFixed(2)} Cr` : '₹0.00',
+      subtext: totalBilled > 0 ? `${recoveryPct}% Institutional Recovery` : 'No collections recorded',
+      state: totalCollected > 0 ? 'success' : 'neutral',
     },
     {
       label: 'Outstanding Receivables',

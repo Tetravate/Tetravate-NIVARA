@@ -235,10 +235,10 @@ export default function HODStudents() {
                       {st.name}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
-                      {st.year || '3rd Year'} · {st.section || 'AIDS-A'}
+                      {st.year || 'N/A'}{st.section ? ` · ${st.section}` : ''}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: 'var(--text-primary)' }}>
-                      {st.advisor || 'Dr. Priya Raman'}
+                      {st.advisor || 'Not Assigned'}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                       <span
@@ -383,7 +383,7 @@ export default function HODStudents() {
                   Faculty Advisorship & Mentoring Notes
                 </strong>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
-                  Assigned Advisor: <strong>{selectedStudentDetail.advisor || 'Dr. Priya Raman'}</strong>.<br />
+                  Assigned Advisor: <strong>{selectedStudentDetail.advisor || 'Not Assigned'}</strong>.<br />
                   {selectedStudentDetail.attendancePct < 75
                     ? 'Student is flagged on the At-Risk Radar. Mandatory counseling directive issued to parent and advisor.'
                     : 'Regular academic performance. Zero critical disciplinary or academic holds on file.'}

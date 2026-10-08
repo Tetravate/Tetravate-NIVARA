@@ -56,14 +56,14 @@ export default function HODWorkload() {
     {
       label: 'At Statutory Ceiling (18h)',
       value: `${atCapCount} Faculty`,
-      subtext: atCapCount > 0 ? 'Prof. Ananya Sen at maximum cap' : 'Within normal bounds',
+      subtext: atCapCount > 0 ? `${atCapCount} instructional staff at maximum cap` : 'Within normal bounds',
       state: atCapCount > 0 ? 'warning' : 'success',
     },
     {
       label: 'Syllabus Delivery Index',
-      value: '97.2%',
-      subtext: 'Department-wide compliance',
-      state: 'success',
+      value: deptFaculty.length > 0 ? 'Active' : 'No Data',
+      subtext: deptFaculty.length > 0 ? `${deptFaculty.length} courses on schedule` : 'No instructional allocations',
+      state: deptFaculty.length > 0 ? 'success' : 'neutral',
     },
   ];
 
@@ -171,7 +171,7 @@ export default function HODWorkload() {
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-                      {f.name.includes('Priya') ? '8h Th / 8h Lab' : f.name.includes('Rajesh') ? '4h Th / 10h Lab' : '14h Th / 4h Lab'}
+                      {f.theoryHours ? `${f.theoryHours}h Th / ${f.labHours || 0}h Lab` : `${f.workloadHours || 14}h Total`}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                       {f.workloadHours} / {f.maxHours} hrs

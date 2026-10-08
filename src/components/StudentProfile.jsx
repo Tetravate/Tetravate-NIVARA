@@ -4,8 +4,8 @@ import { useNivara } from '../context/NivaraContext';
 
 export default function StudentProfile({ onBack }) {
   const { students, currentUser, updateUserProfile } = useNivara();
-  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
-  const student = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+  const student = (students || []).find((s) => (activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser.email)) || {};
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -120,16 +120,16 @@ export default function StudentProfile({ onBack }) {
               </form>
             ) : (
               <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                B.Tech in {student.department} · {student.year} ({student.email})
+                {student?.department ? `B.Tech in ${student.department}` : 'Institutional Program'} {student?.year ? `· ${student.year}` : ''} ({student?.email || currentUser?.email || '—'})
               </p>
             )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-              <span>ID: <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{student.id}</code></span>
+              <span>ID: <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{student?.id || activeStudentId || '—'}</code></span>
               <span>•</span>
-              <span>Roll: {student.rollNo || '22AIDS042'}</span>
+              <span>Roll: {student?.rollNo || student?.roll || '—'}</span>
               <span>•</span>
-              <span>Academic Advisor: <strong>{student.advisor || 'Dr. Priya Raman'}</strong></span>
+              <span>Academic Advisor: <strong>{student?.advisor || 'Unassigned'}</strong></span>
             </div>
           </div>
         </div>
@@ -148,10 +148,10 @@ export default function StudentProfile({ onBack }) {
               Cumulative CGPA
             </div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-              {student.cgpa}
+              {student?.cgpa ?? '0.0'}
             </div>
             <div style={{ fontSize: '0.6875rem', color: 'var(--state-success)', fontWeight: 600 }}>
-              Top 5% Department Rank
+              {(student?.cgpa || 0) >= 8.5 ? 'Distinction Standing' : 'Active Standing'}
             </div>
           </div>
 
@@ -159,11 +159,11 @@ export default function StudentProfile({ onBack }) {
             <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
               Current Attendance
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: student.attendancePct >= 75 ? 'var(--state-success)' : 'var(--state-urgent)', marginTop: '0.2rem' }}>
-              {student.attendancePct}%
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: (student?.attendancePct ?? 0) >= 75 ? 'var(--state-success)' : 'var(--state-urgent)', marginTop: '0.2rem' }}>
+              {student?.attendancePct ?? 0}%
             </div>
-            <div style={{ fontSize: '0.6875rem', color: student.attendancePct >= 75 ? 'var(--state-success)' : 'var(--state-urgent)' }}>
-              {student.attendancePct >= 75 ? 'Above 75% cutoff' : 'Attendance Warning'}
+            <div style={{ fontSize: '0.6875rem', color: (student?.attendancePct ?? 0) >= 75 ? 'var(--state-success)' : 'var(--state-urgent)' }}>
+              {(student?.attendancePct ?? 0) >= 75 ? 'Above 75% cutoff' : 'Attendance Warning'}
             </div>
           </div>
 
@@ -172,10 +172,10 @@ export default function StudentProfile({ onBack }) {
               Current Semester
             </div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-              Semester {student.semester}
+              Semester {student?.semester || 1}
             </div>
             <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-              Autumn Term 2026
+              Enrolled Term
             </div>
           </div>
 
@@ -183,11 +183,11 @@ export default function StudentProfile({ onBack }) {
             <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
               Fee Account Status
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: student.feeStatus === 'paid' ? 'var(--state-success)' : 'var(--state-warning)', marginTop: '0.2rem' }}>
-              {student.feeStatus === 'paid' ? 'Cleared' : 'Pending'}
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: student?.feeStatus === 'paid' || !student?.feePendingAmount ? 'var(--state-success)' : 'var(--state-warning)', marginTop: '0.2rem' }}>
+              {student?.feeStatus === 'paid' || !student?.feePendingAmount ? 'Cleared' : 'Pending'}
             </div>
             <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-              {student.feeStatus === 'paid' ? 'No outstanding dues' : `₹${student.feePendingAmount.toLocaleString()} due`}
+              {student?.feeStatus === 'paid' || !student?.feePendingAmount ? 'No outstanding dues' : `₹${(student.feePendingAmount || 0).toLocaleString()} due`}
             </div>
           </div>
         </div>

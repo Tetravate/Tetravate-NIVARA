@@ -132,6 +132,8 @@ export async function loginWithCredentials(email, password, remember = true) {
           userName: profile.full_name,
           title: profile.title,
           dept: profile.department,
+          studentId: profile.student_id || profile.id,
+          facultyId: profile.faculty_id || profile.id,
           avatar: profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
         },
         provider: 'supabase',

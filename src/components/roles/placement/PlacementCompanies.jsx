@@ -581,7 +581,7 @@ export default function PlacementCompanies({ onNavigate }) {
                   className="btn btn-primary btn-sm"
                   onClick={() => {
                     setViewCompanyDetails(null);
-                    onNavigate && onNavigate('drives');
+                    if (onNavigate) onNavigate('drives');
                   }}
                 >
                   Post Drive for {viewCompanyDetails.name}

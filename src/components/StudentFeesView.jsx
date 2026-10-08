@@ -24,7 +24,7 @@ export default function StudentFeesView({ onBack }) {
     showToast,
   } = useNivara();
 
-  const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -34,38 +34,38 @@ export default function StudentFeesView({ onBack }) {
 
   // Student's transaction records (filtered by active student id or student name)
   const studentPayments = (paymentHistory || []).filter(
-    (p) => p.studentId === student.id || p.studentName === student.name
+    (p) => (student.id && p.studentId === student.id) || (student.name && p.studentName === student.name)
   );
 
-  const totalBilled = 45000;
-  const isPaid = student.feeStatus === 'paid';
-  const pendingAmount = isPaid ? 0 : (student.feePendingAmount || 45000);
-  const paidAmount = isPaid ? 45000 : 0;
+  const pendingAmount = student.feePendingAmount !== undefined ? student.feePendingAmount : 0;
+  const isPaid = student.feeStatus === 'paid' || pendingAmount === 0;
+  const paidAmount = (studentPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalBilled = paidAmount + pendingAmount;
 
   const feeMetrics = [
     {
       label: 'Semester Billed Dues',
       value: `₹${totalBilled.toLocaleString()}`,
-      subtext: 'Semester 5 Tuition & Labs',
+      subtext: totalBilled > 0 ? (student?.semester ? `Semester ${student.semester} Tuition & Labs` : 'Academic Fees') : 'No Current Dues Billed',
       state: 'info',
     },
     {
       label: 'Settled / Realized',
       value: `₹${paidAmount.toLocaleString()}`,
-      subtext: isPaid ? '100% Realized by Bursar' : 'No payments realized',
-      state: isPaid ? 'success' : 'neutral',
+      subtext: isPaid && totalBilled > 0 ? '100% Realized by Bursar' : (paidAmount > 0 ? 'Partially Realized' : 'No payments realized'),
+      state: isPaid && totalBilled > 0 ? 'success' : 'neutral',
     },
     {
       label: 'Outstanding Balance',
       value: `₹${pendingAmount.toLocaleString()}`,
-      subtext: isPaid ? 'Account in Good Standing' : `Due by ${student.feeDueDate || '15 Oct 2026'}`,
-      state: isPaid ? 'success' : 'urgent',
+      subtext: pendingAmount === 0 ? 'Account in Good Standing' : (student.feeDueDate ? `Due by ${student.feeDueDate}` : 'Payment Action Required'),
+      state: pendingAmount === 0 ? 'success' : 'urgent',
     },
     {
       label: 'Account Reconciliation',
-      value: isPaid ? 'Cleared' : 'Pending',
-      subtext: isPaid ? 'Zero Encumbrance' : 'Payment Action Required',
-      state: isPaid ? 'success' : 'warning',
+      value: pendingAmount === 0 ? 'Cleared' : 'Pending',
+      subtext: pendingAmount === 0 ? 'Zero Encumbrance' : 'Payment Action Required',
+      state: pendingAmount === 0 ? 'success' : 'warning',
     },
   ];
 
@@ -166,18 +166,18 @@ export default function StudentFeesView({ onBack }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
             <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lecture Hall Tuition</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹35,000</div>
-              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Core 22 Course Credits</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{Math.round(totalBilled * 0.75).toLocaleString()}</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Core Curriculum Component</div>
             </div>
             <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Computing & Lab Infrastructure</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹7,500</div>
-              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>High-Performance Cloud Labs</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{Math.round(totalBilled * 0.18).toLocaleString()}</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Practical & Systems Lab</div>
             </div>
             <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Library & Student Amenities</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹2,500</div>
-              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Digital Journals & Campus Pass</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{(totalBilled - Math.round(totalBilled * 0.75) - Math.round(totalBilled * 0.18)).toLocaleString()}</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Institutional Resources</div>
             </div>
           </div>
         </div>
@@ -192,24 +192,15 @@ export default function StudentFeesView({ onBack }) {
             >
               <CreditCard size={14} /> Settle ₹{pendingAmount.toLocaleString()} Online
             </button>
-          ) : (
+          ) : studentPayments.length > 0 ? (
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={() =>
-                setReceiptViewModal(
-                  studentPayments[0] || {
-                    receiptNo: 'REC-2026-NIV-8921',
-                    amount: 45000,
-                    description: 'Semester 5 Tuition Cleared',
-                    paidOn: 'Today',
-                  }
-                )
-              }
+              onClick={() => setReceiptViewModal(studentPayments[0])}
             >
               <Download size={13} /> View Verified Receipt
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 

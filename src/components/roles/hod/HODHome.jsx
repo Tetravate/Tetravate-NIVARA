@@ -20,6 +20,7 @@ export default function HODHome({ onNavigate }) {
     approveLeaveRequest,
     coursesAttendance,
     sendAnnouncement,
+    currentUser,
     showToast,
   } = useNivara();
 
@@ -27,20 +28,13 @@ export default function HODHome({ onNavigate }) {
   const [counselingModal, setCounselingModal] = useState(null);
   const [counselingNotes, setCounselingNotes] = useState('');
 
-  // Department of AI & Data Science (AIDS)
-  const dept = (departments || []).find((d) => d.code === 'AIDS') || {
-    code: 'AIDS',
-    name: 'Department of AI & Data Science',
-    studentCount: 380,
-    facultyCount: 14,
-    attendancePct: 84.8,
-    avgCgpa: 8.42,
-    placedPct: 82,
-  };
+  // Department of AI & Data Science (AIDS) or first registered department
+  const dept = (departments || []).find((d) => d.code === 'AIDS') || (departments && departments.length > 0 ? departments[0] : null);
 
   const deptStudents = useMemo(() => {
-    return (students || []).filter((s) => s.deptCode === 'AIDS' || s.department?.includes('AI & Data Science'));
-  }, [students]);
+    if (!dept) return [];
+    return (students || []).filter((s) => s.deptCode === dept.code || s.department?.includes(dept.name));
+  }, [students, dept]);
 
   const atRiskStudents = useMemo(() => {
     return deptStudents.filter((s) => (s.attendancePct || 0) < 75 || (s.backlogs || 0) > 0 || s.standing === 'Academic Risk');
@@ -56,9 +50,9 @@ export default function HODHome({ onNavigate }) {
 
   const handleSendAnnouncement = (e) => {
     e.preventDefault();
-    if (!announcementText.trim()) return;
+    if (!announcementText.trim() || !dept) return;
     sendAnnouncement(`Department Circular: ${dept.name}`, announcementText, 'student');
-    showToast(`Department Circular dispatched to ${dept.studentCount} AI & DS students ✓`, 'success');
+    showToast(`Department Circular dispatched to ${dept.name} students ✓`, 'success');
     setAnnouncementText('');
   };
 
@@ -70,18 +64,22 @@ export default function HODHome({ onNavigate }) {
     setCounselingNotes('');
   };
 
+  const enrolledCount = dept ? (deptStudents.length > 0 ? deptStudents.length : dept.studentCount || 0) : 0;
+  const attendanceVal = dept ? (deptStudents.length > 0 ? Number((deptStudents.reduce((sum, s) => sum + (s.attendancePct || 0), 0) / deptStudents.length).toFixed(1)) : dept.attendancePct || 0) : 0;
+  const placedVal = dept ? (dept.placedPct || 0) : 0;
+
   const metrics = [
     {
       label: 'Enrolled Students',
-      value: `${dept.studentCount} Undergrads`,
-      subtext: 'B.Tech AI & Data Science (Y1–Y4)',
+      value: dept ? `${enrolledCount} Undergrads` : 'No Department',
+      subtext: dept ? (dept.name || 'Department Students') : 'Department registry empty',
       state: 'neutral',
     },
     {
       label: 'Department Attendance',
-      value: `${dept.attendancePct}%`,
+      value: dept ? `${attendanceVal}%` : 'N/A',
       subtext: 'Synchronized live from faculty roll calls',
-      state: dept.attendancePct >= 75 ? 'success' : 'warning',
+      state: attendanceVal >= 75 ? 'success' : 'warning',
     },
     {
       label: 'Academic Risk Attention',
@@ -91,7 +89,7 @@ export default function HODHome({ onNavigate }) {
     },
     {
       label: 'Placement Conversion',
-      value: `${dept.placedPct}%`,
+      value: dept ? `${placedVal}%` : 'N/A',
       subtext: 'Career Development Center radar',
       state: 'info',
     },
@@ -102,7 +100,7 @@ export default function HODHome({ onNavigate }) {
       {/* 1. Header (HOD Persona) */}
       <PageHeader
         eyebrow={`Department Operating System · ${dept.name}`}
-        title="Good Morning, Dr. K. Mohan"
+        title={currentUser?.userName ? `Department Workspace · ${currentUser.userName}` : 'Department Workspace'}
         description="Immediate department operational status, lecture session tracking, student academic health alerts, and pending administrative sanctions."
         actions={[
           <button
@@ -290,7 +288,7 @@ export default function HODHome({ onNavigate }) {
                     </div>
 
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      Advisor: <strong>{st.advisor || 'Dr. Priya Raman'}</strong> · CGPA: <strong>{st.cgpa}</strong>
+                      Advisor: <strong>{st.advisor || 'Not Assigned'}</strong> · CGPA: <strong>{st.cgpa}</strong>
                       {st.backlogs > 0 && <span> · Backlogs: <strong style={{ color: 'var(--state-urgent)' }}>{st.backlogs}</strong></span>}
                     </div>
 

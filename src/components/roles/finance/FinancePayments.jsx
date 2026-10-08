@@ -47,8 +47,8 @@ export default function FinancePayments() {
 
       const matchesMode =
         modeFilter === 'ALL' ||
-        (modeFilter === 'offline' && (p.mode.includes('Offline') || p.mode.includes('Challan') || p.mode.includes('NEFT'))) ||
-        (modeFilter === 'demo' && p.mode.includes('Demo'));
+        (modeFilter === 'offline' && (p.mode?.includes('Offline') || p.mode?.includes('Challan') || p.mode?.includes('NEFT'))) ||
+        (modeFilter === 'online' && (!p.mode?.includes('Offline') && !p.mode?.includes('Challan') && !p.mode?.includes('NEFT')));
 
       return matchesSearch && matchesMode;
     });
@@ -57,8 +57,8 @@ export default function FinancePayments() {
   // Aggregate Metrics
   const totalCollected = (paymentHistory || []).reduce((acc, p) => acc + (p.amount || 0), 0);
   const totalCount = (paymentHistory || []).length;
-  const offlineCount = (paymentHistory || []).filter((p) => !p.mode.includes('Demo')).length;
-  const demoCount = (paymentHistory || []).filter((p) => p.mode.includes('Demo')).length;
+  const offlineCount = (paymentHistory || []).filter((p) => p.mode?.includes('Offline') || p.mode?.includes('Challan') || p.mode?.includes('NEFT')).length;
+  const onlineCount = (paymentHistory || []).filter((p) => !p.mode?.includes('Offline') && !p.mode?.includes('Challan') && !p.mode?.includes('NEFT')).length;
 
   const metrics = [
     {
@@ -80,9 +80,9 @@ export default function FinancePayments() {
       state: 'info',
     },
     {
-      label: 'Demo Simulated Gateway',
-      value: demoCount.toString(),
-      subtext: 'Sandbox Demonstration Transactions',
+      label: 'Online Digital Gateway',
+      value: onlineCount.toString(),
+      subtext: 'UPI & Payment Card Settlements',
       state: 'neutral',
     },
   ];

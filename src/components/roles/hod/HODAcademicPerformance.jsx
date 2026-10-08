@@ -27,63 +27,23 @@ export default function HODAcademicPerformance() {
   const dept = (departments || []).find((d) => d.code === 'AIDS') || {
     code: 'AIDS',
     name: 'Department of AI & Data Science',
-    avgCgpa: 8.42,
-    placedPct: 82,
+    avgCgpa: 0,
+    placedPct: 0,
   };
 
-  // Department Semester 5 Subjects with CIA marks and moderation telemetry
-  const subjectPerformance = [
-    {
-      code: 'CS301',
-      name: 'Data Structures & Algorithms',
-      faculty: 'Dr. Priya Raman',
+  // Department Subjects with CIA marks and moderation telemetry derived from live internalMarks
+  const subjectPerformance = useMemo(() => {
+    return (internalMarks || []).map((im) => ({
+      code: im.courseCode,
+      name: im.subject || im.courseCode,
+      faculty: im.enteredBy || 'Faculty Instructor',
       credits: 4,
-      avgCia: '22.8 / 25',
-      passPct: 96.7,
-      status: 'locked',
-      gradeDist: { S: 18, A: 24, B: 12, C: 4, U: 2 },
-    },
-    {
-      code: 'AI302',
-      name: 'Machine Learning Foundations Lab',
-      faculty: 'Dr. Rajesh K.',
-      credits: 2,
-      avgCia: '23.5 / 25',
-      passPct: 98.3,
-      status: 'draft',
-      gradeDist: { S: 22, A: 26, B: 10, C: 2, U: 0 },
-    },
-    {
-      code: 'CS304',
-      name: 'Database Management Systems',
-      faculty: 'Dr. K. Mohan',
-      credits: 3,
-      avgCia: '21.4 / 25',
-      passPct: 95.0,
-      status: 'locked',
-      gradeDist: { S: 14, A: 28, B: 14, C: 2, U: 2 },
-    },
-    {
-      code: 'MA301',
-      name: 'Discrete Mathematics & Graph Theory',
-      faculty: 'Prof. S. Venkatesh',
-      credits: 4,
-      avgCia: '19.8 / 25',
-      passPct: 91.5,
-      status: 'locked',
-      gradeDist: { S: 10, A: 20, B: 20, C: 6, U: 4 },
-    },
-    {
-      code: 'CS302',
-      name: 'Object Oriented Programming with Java',
-      faculty: 'Prof. Ananya Sen',
-      credits: 3,
-      avgCia: '20.6 / 25',
-      passPct: 93.3,
-      status: 'locked',
-      gradeDist: { S: 12, A: 22, B: 18, C: 5, U: 3 },
-    },
-  ];
+      avgCia: `${im.scoredMark || 0} / ${im.maxMark || 25}`,
+      passPct: im.scoredMark >= 15 ? 100 : (im.scoredMark > 0 ? 50 : 0),
+      status: im.status || 'draft',
+      gradeDist: { S: 0, A: 0, B: 0, C: 0, U: 0 },
+    }));
+  }, [internalMarks]);
 
   const filteredSubjects = useMemo(() => {
     return subjectPerformance.filter((s) => {

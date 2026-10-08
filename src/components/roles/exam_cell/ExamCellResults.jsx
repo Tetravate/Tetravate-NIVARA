@@ -9,6 +9,7 @@ import { PageHeader, MetricStrip, SectionHeader, DataTable } from '../../workspa
 
 export default function ExamCellResults({ onNavigate }) {
   const {
+    departments,
     publishedResults,
     setPublishedResults,
     publishExamResults,
@@ -34,48 +35,16 @@ export default function ExamCellResults({ onNavigate }) {
     showToast('Result publication reverted to Committee Moderation stage ✓', 'info');
   };
 
-  const departmentBreakdown = [
-    {
-      code: 'AIDS',
-      name: 'Artificial Intelligence & Data Science',
-      enrolled: 42,
-      evaluated: 42,
-      passed: 40,
-      failed: 2,
-      passPct: '95.2%',
-      avgCgpa: 8.74,
-    },
-    {
-      code: 'CSE',
-      name: 'Computer Science & Engineering',
-      enrolled: 60,
-      evaluated: 60,
-      passed: 57,
-      failed: 3,
-      passPct: '95.0%',
-      avgCgpa: 8.62,
-    },
-    {
-      code: 'ECE',
-      name: 'Electronics & Communication Eng.',
-      enrolled: 55,
-      evaluated: 55,
-      passed: 50,
-      failed: 5,
-      passPct: '90.9%',
-      avgCgpa: 8.35,
-    },
-    {
-      code: 'MECH',
-      name: 'Mechanical Engineering',
-      enrolled: 48,
-      evaluated: 48,
-      passed: 43,
-      failed: 5,
-      passPct: '89.6%',
-      avgCgpa: 8.15,
-    },
-  ];
+  const departmentBreakdown = (departments || []).map((d) => ({
+    code: d.code,
+    name: d.name,
+    enrolled: d.studentCount || 0,
+    evaluated: d.studentCount || 0,
+    passed: Math.round(((d.studentCount || 0) * (d.passPct || 100)) / 100),
+    failed: Math.max(0, (d.studentCount || 0) - Math.round(((d.studentCount || 0) * (d.passPct || 100)) / 100)),
+    passPct: `${d.passPct || 100}%`,
+    avgCgpa: d.avgCgpa || 0,
+  }));
 
   const resultsMetrics = [
     {
@@ -86,15 +55,15 @@ export default function ExamCellResults({ onNavigate }) {
     },
     {
       label: 'Institutional Pass Rate',
-      value: `${publishedResults?.departmentPassPct || 94.2}%`,
+      value: `${publishedResults?.departmentPassPct || 0}%`,
       subtext: 'Across all evaluated engineering departments',
-      state: 'success',
+      state: (publishedResults?.departmentPassPct || 0) > 0 ? 'success' : 'neutral',
     },
     {
       label: 'Average CGPA Benchmark',
-      value: `${publishedResults?.overallCgpa || 8.72}`,
-      subtext: 'First Class with Distinction benchmark',
-      state: 'info',
+      value: `${publishedResults?.overallCgpa || 0}`,
+      subtext: (publishedResults?.overallCgpa || 0) > 0 ? 'Institutional CGPA benchmark' : 'Pending published results',
+      state: (publishedResults?.overallCgpa || 0) > 0 ? 'info' : 'neutral',
     },
     {
       label: 'Degree Credits Tabulated',

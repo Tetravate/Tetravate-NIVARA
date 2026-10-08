@@ -24,17 +24,7 @@ export default function AdminFaculty() {
     hours: 14,
   });
 
-  const fallbackFaculty = [
-    { name: 'Dr. Priya Raman', role: 'Associate Professor', dept: 'AI & Data Science', deptCode: 'AIDS', courses: 'Machine Learning (AI302)', hours: 16, rating: 4.8 },
-    { name: 'Prof. Ananya Sen', role: 'Assistant Professor', dept: 'AI & Data Science', deptCode: 'AIDS', courses: 'Database Management Systems (CS301)', hours: 14, rating: 4.7 },
-    { name: 'Prof. S. Venkatesh', role: 'Associate Professor', dept: 'AI & Data Science', deptCode: 'AIDS', courses: 'Data Structures & Algorithms (CS304)', hours: 18, rating: 4.9 },
-    { name: 'Dr. Rajesh K', role: 'Professor', dept: 'Computer Science & Engg', deptCode: 'CSE', courses: 'Advanced Operating Systems (CS501)', hours: 12, rating: 4.9 },
-    { name: 'Dr. Sunita Sharma', role: 'Professor', dept: 'Electronics & Comm', deptCode: 'ECE', courses: 'VLSI Digital Signal Processing (EC402)', hours: 14, rating: 4.8 },
-    { name: 'Prof. R. Balaji', role: 'Associate Professor', dept: 'Mechanical Engineering', deptCode: 'MECH', courses: 'Finite Element Analysis (ME301)', hours: 16, rating: 4.6 },
-    { name: 'Dr. M. Gurumurthy', role: 'Professor', dept: 'Civil Engineering', deptCode: 'CIVIL', courses: 'Structural Dynamics (CE401)', hours: 14, rating: 4.7 },
-  ];
-
-  const facultyData = (facultyMembers && facultyMembers.length > 0) ? facultyMembers : fallbackFaculty;
+  const facultyData = facultyMembers || [];
 
   const filteredFaculty = useMemo(() => {
     return facultyData.filter((f) => {

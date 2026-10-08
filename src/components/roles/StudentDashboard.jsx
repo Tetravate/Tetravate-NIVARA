@@ -47,9 +47,8 @@ export default function StudentDashboard() {
   } = useNivara();
 
   // Dynamic student identity resolution from authenticated session
-  // Dynamic student identity resolution from authenticated session
-  const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
-  const student = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+  const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+  const student = (students || []).find((s) => (activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser?.email)) || (students || [])[0] || {};
 
   // Modals inside Student dashboard
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -66,23 +65,10 @@ export default function StudentDashboard() {
     .filter((e) => e.dayOfWeek === 'Tuesday')
     .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
-  const liveClass = tuesdayEntries.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || {
-    subjectName: 'Data Structures & Algorithms',
-    courseCode: 'CS301',
-    facultyName: 'Dr. Priya Raman',
-    room: 'Computing Lab 2 (Block B)',
-    timeSlot: '10:00 AM – 11:30 AM',
-    status: 'in-progress',
-  };
+  const liveClass = tuesdayEntries.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || (tuesdayEntries.length > 0 ? tuesdayEntries[0] : null);
 
   // 2. NEXT: next class, upcoming assignment, upcoming exam, immediate item
-  const nextClass = tuesdayEntries.find((e) => e.startTime > '10:30:00') || {
-    subjectName: 'Database Management Systems',
-    courseCode: 'CS304',
-    facultyName: 'Dr. K. Mohan',
-    room: 'Room B104',
-    timeSlot: '02:00 PM – 03:30 PM',
-  };
+  const nextClass = tuesdayEntries.find((e) => e.startTime > '10:30:00') || (tuesdayEntries.length > 1 ? tuesdayEntries[1] : null);
 
   const urgentAssignment = assignments.find((a) => !a.completed && (a.urgency === 'urgent' || a.urgency === 'important')) || assignments.find((a) => !a.completed);
   const nextExam = examSessions && examSessions.length > 0 ? examSessions[0] : null;
@@ -150,11 +136,15 @@ export default function StudentDashboard() {
         eyebrow={
           <>
             <span>Tuesday · 7 October 2026</span>
-            <span style={{ color: 'var(--border-strong)' }}>/</span>
-            <span>{student.department || 'AI & Data Science'} · {student.year || '3rd Year'} (Sem {student.semester || 5})</span>
+            {student.department && (
+              <>
+                <span style={{ color: 'var(--border-strong)' }}>/</span>
+                <span>{student.department}{student.year ? ` · ${student.year}` : ''}{student.semester ? ` (Sem ${student.semester})` : ''}</span>
+              </>
+            )}
           </>
         }
-        title={`Student Workspace · ${(student.name || 'Aadhi').split(' ')[0]}`}
+        title={student.name ? `Student Workspace · ${student.name.split(' ')[0]}` : 'Student Workspace'}
         description="Unified operational aggregation for lectures, deadlines, institutional standing, and university milestones."
         actions={
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -197,44 +187,50 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        <div
-          onClick={() => setActiveTab('today')}
-          style={{
-            cursor: 'pointer',
-            padding: '0.75rem 1rem',
-            background: 'var(--bg-hover)',
-            borderRadius: 'var(--radius-xs)',
-            borderLeft: '3px solid var(--brand-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {liveClass.timeSlot || '10:00 AM – 11:30 AM'}
-              </span>
-              <span className="badge badge-neutral" style={{ fontSize: '0.625rem' }}>
-                {liveClass.courseCode || 'CS301'}
-              </span>
+        {liveClass ? (
+          <div
+            onClick={() => setActiveTab('today')}
+            style={{
+              cursor: 'pointer',
+              padding: '0.75rem 1rem',
+              background: 'var(--bg-hover)',
+              borderRadius: 'var(--radius-xs)',
+              borderLeft: '3px solid var(--brand-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {liveClass.timeSlot}
+                </span>
+                <span className="badge badge-neutral" style={{ fontSize: '0.625rem' }}>
+                  {liveClass.courseCode}
+                </span>
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {liveClass.subjectName || liveClass.subject}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <MapPin size={12} /> {liveClass.room}
+                </span>
+                <span>•</span>
+                <span>Instructor: <strong>{liveClass.facultyName || liveClass.faculty}</strong></span>
+                <span>•</span>
+                <span>Section: {student.deptCode ? `${student.deptCode}-${student.section || 'A'}` : (student.section || 'General')}</span>
+              </div>
             </div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              {liveClass.subjectName || liveClass.subject || 'Data Structures & Algorithms'}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <MapPin size={12} /> {liveClass.room || 'Computing Lab 2 (Block B)'}
-              </span>
-              <span>•</span>
-              <span>Instructor: <strong>{liveClass.facultyName || liveClass.faculty || 'Dr. Priya Raman'}</strong></span>
-              <span>•</span>
-              <span>Section: {student.deptCode || 'AIDS'}-A</span>
-            </div>
+            <ChevronRight size={18} color="var(--text-muted)" />
           </div>
-          <ChevronRight size={18} color="var(--text-muted)" />
-        </div>
+        ) : (
+          <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            No active lectures or laboratory sessions scheduled for this period.
+          </div>
+        )}
       </section>
 
       {/* 2. NEXT */}
@@ -248,27 +244,36 @@ export default function StudentDashboard() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
           {/* Next Class */}
-          <div
-            onClick={() => setActiveTab('today')}
-            style={{
-              cursor: 'pointer',
-              padding: '0.75rem',
-              background: 'var(--bg-subtle)',
-              borderRadius: 'var(--radius-xs)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+          {nextClass ? (
+            <div
+              onClick={() => setActiveTab('today')}
+              style={{
+                cursor: 'pointer',
+                padding: '0.75rem',
+                background: 'var(--bg-subtle)',
+                borderRadius: 'var(--radius-xs)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Next Lecture</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--brand-primary)', fontWeight: 600 }}>{nextClass.timeSlot}</span>
+              </div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {nextClass.subjectName || nextClass.subject}
+              </div>
+              <div style={{ fontSize: '0.71875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                {nextClass.room} · {nextClass.facultyName || nextClass.faculty}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
               <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Next Lecture</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--brand-primary)', fontWeight: 600 }}>{nextClass.timeSlot}</span>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                No further classes scheduled today
+              </div>
             </div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {nextClass.subjectName || 'Database Systems'}
-            </div>
-            <div style={{ fontSize: '0.71875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {nextClass.room} · {nextClass.facultyName || 'Dr. K. Mohan'}
-            </div>
-          </div>
+          )}
 
           {/* Upcoming Assignment */}
           {urgentAssignment ? (

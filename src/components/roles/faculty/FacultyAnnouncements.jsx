@@ -12,6 +12,7 @@ export default function FacultyAnnouncements() {
     announcements,
     publishAnnouncement,
     currentUser,
+    students,
     showToast,
   } = useNivara();
 
@@ -23,23 +24,22 @@ export default function FacultyAnnouncements() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    targetCourse: 'CS301',
-    targetSection: 'AIDS-A-SEM5',
+    targetCourse: '',
+    targetSection: '',
     priority: 'normal', // 'normal' | 'high'
   });
 
   // Filter announcements relevant to Faculty's department and courses
   const facultyAnnouncements = useMemo(() => {
     return (announcements || []).filter((a) => {
-      // Include announcements created by faculty, or department-level AIDS circulars, or course-specific notices
       return (
         a.publishedRole === 'faculty' ||
-        a.publishedBy?.includes('Priya Raman') ||
-        a.targetDept === 'AIDS' ||
+        (currentUser?.userName && a.publishedBy?.includes(currentUser.userName)) ||
+        a.targetDept === (currentUser?.deptCode || 'AIDS') ||
         a.targetDept === 'ALL'
       );
     });
-  }, [announcements]);
+  }, [announcements, currentUser]);
 
   const filteredAnnouncements = useMemo(() => {
     return facultyAnnouncements.filter((a) => {
@@ -53,20 +53,20 @@ export default function FacultyAnnouncements() {
   }, [facultyAnnouncements, selectedCohortFilter, searchQuery]);
 
   const noticesPostedByFaculty = facultyAnnouncements.filter(
-    (a) => a.publishedRole === 'faculty' || a.publishedBy?.includes('Priya Raman')
+    (a) => a.publishedRole === 'faculty' || (currentUser?.userName && a.publishedBy?.includes(currentUser.userName))
   ).length;
 
   const metrics = [
     {
       label: 'Class Notices Posted',
       value: `${noticesPostedByFaculty} Published`,
-      subtext: 'By Dr. Priya Raman',
+      subtext: currentUser?.userName ? `By ${currentUser.userName}` : 'By Faculty',
       state: 'info',
     },
     {
       label: 'Target Cohort Reach',
-      value: '28 Students',
-      subtext: 'Section AIDS-A Batch',
+      value: `${(students || []).length} Students`,
+      subtext: 'Enrolled Cohort',
       state: 'success',
     },
     {
@@ -94,11 +94,11 @@ export default function FacultyAnnouncements() {
       title: `[${formData.targetCourse}] ${formData.title}`,
       content: formData.content,
       scope: 'class',
-      targetDept: 'AIDS',
+      targetDept: currentUser?.deptCode || 'AIDS',
       targetSection: formData.targetSection,
       targetRole: 'student',
       priority: formData.priority,
-      publishedBy: currentUser?.userName || 'Dr. Priya Raman',
+      publishedBy: currentUser?.userName || 'Faculty',
       publishedRole: 'faculty',
     });
 
@@ -106,8 +106,8 @@ export default function FacultyAnnouncements() {
     setFormData({
       title: '',
       content: '',
-      targetCourse: 'CS301',
-      targetSection: 'AIDS-A-SEM5',
+      targetCourse: '',
+      targetSection: '',
       priority: 'normal',
     });
   };
@@ -198,7 +198,7 @@ export default function FacultyAnnouncements() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {filteredAnnouncements.map((anc) => {
             const isHighPriority = anc.priority === 'high';
-            const isByMe = anc.publishedRole === 'faculty' || anc.publishedBy?.includes('Priya Raman');
+            const isByMe = anc.publishedRole === 'faculty' || (currentUser?.userName && anc.publishedBy?.includes(currentUser.userName));
 
             return (
               <div

@@ -21,13 +21,13 @@ export default function DataTable({
           <tr>
             {columns.map((col, idx) => (
               <th
-                key={col.key || idx}
+                key={col.key || col.accessor || idx}
                 style={{
                   textAlign: col.align || 'left',
                   width: col.width || 'auto',
                 }}
               >
-                {col.label}
+                {col.label ?? col.header ?? ''}
               </th>
             ))}
           </tr>
@@ -60,12 +60,12 @@ export default function DataTable({
                 >
                   {columns.map((col, colIdx) => (
                     <td
-                      key={col.key || colIdx}
+                      key={col.key || col.accessor || colIdx}
                       style={{
                         textAlign: col.align || 'left',
                       }}
                     >
-                      {col.render ? col.render(row) : row[col.key]}
+                      {col.render ? col.render(row) : (row[col.key || col.accessor] ?? '')}
                     </td>
                   ))}
                 </tr>

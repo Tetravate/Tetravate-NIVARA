@@ -12,7 +12,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useNivara } from '../context/NivaraContext';
-import { WEEKLY_TIMETABLE } from '../data/mockData';
 import TodayTimeline from './TodayTimeline';
 import { PageHeader, SectionHeader, EmptyState } from './workspace';
 
@@ -23,67 +22,18 @@ export default function TimetableSwitch({ onBack }) {
 
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-  // Faculty mapping for subjects
-  const FACULTY_MAP = {
-    CS301: 'Dr. Priya Raman',
-    CS302: 'Prof. Ananya Sen',
-    CS304: 'Dr. K. Mohan',
-    MA301: 'Prof. S. Venkatesh',
-    AI302: 'Dr. Rajesh K.',
-    AI308: 'Dr. Priya Raman',
-  };
-
-  // Extract courses for selected day, merging context timetableEntries with WEEKLY_TIMETABLE
+  // Extract courses for selected day directly from live context timetableEntries
   const getDaySchedule = (day) => {
-    // 1. Get entries from context timetableEntries
     const contextEntries = (timetableEntries || []).filter((e) => e.dayOfWeek === day);
 
-    // 2. Get baseline from WEEKLY_TIMETABLE
-    const mockDayList = WEEKLY_TIMETABLE[day] || [];
-
-    if (contextEntries.length > 0) {
-      // Merge context entries with baseline
-      const merged = [...contextEntries.map((e) => ({
-        time: e.timeSlot,
-        subject: e.subjectName,
-        code: e.courseCode,
-        faculty: e.facultyName,
-        room: e.room,
-        isLab: e.isLab,
-      }))];
-
-      // Add remaining from mock if not overlapping
-      mockDayList.forEach((m) => {
-        const alreadyExists = merged.some((e) => e.time === m.time || e.subject.includes(m.subject));
-        if (!alreadyExists) {
-          const codeMatch = m.subject.match(/\(([A-Z0-9]+)\)/);
-          const code = codeMatch ? codeMatch[1] : '';
-          merged.push({
-            time: m.time,
-            subject: m.subject.replace(/\s*\([A-Z0-9]+\)/, ''),
-            code,
-            faculty: FACULTY_MAP[code] || 'Faculty Member',
-            room: m.room,
-            isLab: m.subject.toLowerCase().includes('lab'),
-          });
-        }
-      });
-
-      return merged;
-    }
-
-    return mockDayList.map((m) => {
-      const codeMatch = m.subject.match(/\(([A-Z0-9]+)\)/);
-      const code = codeMatch ? codeMatch[1] : '';
-      return {
-        time: m.time,
-        subject: m.subject.replace(/\s*\([A-Z0-9]+\)/, ''),
-        code,
-        faculty: FACULTY_MAP[code] || (m.subject.includes('Free') || m.subject.includes('Library') ? 'Self-Guided' : 'Faculty Member'),
-        room: m.room,
-        isLab: m.subject.toLowerCase().includes('lab'),
-      };
-    });
+    return contextEntries.map((e) => ({
+      time: e.timeSlot || e.time || '09:00 - 10:00',
+      subject: e.subjectName || e.subject || 'Academic Session',
+      code: e.courseCode || e.code || '',
+      faculty: e.facultyName || e.faculty || 'Faculty Member',
+      room: e.room || 'TBA',
+      isLab: Boolean(e.isLab || (e.subjectName || e.subject || '').toLowerCase().includes('lab')),
+    }));
   };
 
   const currentSchedule = getDaySchedule(selectedDay);

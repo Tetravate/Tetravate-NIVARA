@@ -25,7 +25,7 @@ export default function ExamCellStudentRecords() {
   const studentRecords = useMemo(() => {
     return (students || []).map((s) => {
       // Check attendance eligibility (institutional 75% threshold)
-      const att = s.attendancePct || s.attendance || 84;
+      const att = s.attendancePct || s.attendance || 0;
       const isEligible = att >= 75;
 
       // Match revaluations
@@ -38,8 +38,8 @@ export default function ExamCellStudentRecords() {
         attendanceRate: att,
         isEligible,
         revaluations: revals,
-        hallTicketIssued: true,
-        assignedSeat: s.seatingSeat || 'Desk B-14',
+        hallTicketIssued: isEligible,
+        assignedSeat: s.seatingSeat || 'Unassigned',
       };
     });
   }, [students, revaluationRequests]);

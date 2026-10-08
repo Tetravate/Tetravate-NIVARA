@@ -20,24 +20,23 @@ export default function StudentCoursesView({ onBack }) {
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Course registry for Semester 5
-  const enrolledCourses = [
-    { code: 'CS301', name: 'Data Structures & Algorithms', faculty: 'Dr. Priya Raman', credits: 4, section: 'AIDS-A' },
-    { code: 'CS302', name: 'Object Oriented Programming & Design', faculty: 'Prof. S. Rangarajan', credits: 4, section: 'AIDS-A' },
-    { code: 'CS304', name: 'Database Management Systems', faculty: 'Dr. K. Mohan', credits: 4, section: 'AIDS-A' },
-    { code: 'MA301', name: 'Discrete Mathematics & Graph Theory', faculty: 'Prof. S. Venkatesh', credits: 4, section: 'AIDS-A' },
-    { code: 'AI301', name: 'Applied Machine Learning Foundations', faculty: 'Dr. Priya Raman', credits: 4, section: 'AIDS-A' },
-    { code: 'CS305', name: 'Computing Architecture & Systems Lab', faculty: 'Dr. R. Ananth', credits: 2, section: 'AIDS-A' },
-  ];
+  // Course registry dynamically derived from registered courses
+  const enrolledCourses = (coursesAttendance || []).map((c) => ({
+    code: c.code,
+    name: c.name,
+    faculty: c.faculty || 'Course Instructor',
+    credits: c.credits || 4,
+    section: c.section || 'A',
+  }));
 
-  const totalCredits = enrolledCourses.reduce((sum, c) => sum + c.credits, 0);
+  const totalCredits = enrolledCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
   const totalMaterials = (courseMaterials || []).length;
 
   const coursesMetrics = [
     {
       label: 'Registered Courses',
       value: `${enrolledCourses.length} Subjects`,
-      subtext: 'Semester 5 Academic Term',
+      subtext: enrolledCourses.length > 0 ? 'Enrolled Academic Term' : 'No Active Registrations',
       state: 'info',
     },
     {
@@ -54,9 +53,9 @@ export default function StudentCoursesView({ onBack }) {
     },
     {
       label: 'Access Authorization',
-      value: 'Enrolled Class',
-      subtext: 'Restricted to AIDS-A section',
-      state: 'success',
+      value: enrolledCourses.length > 0 ? 'Enrolled Class' : 'Pending Enrollment',
+      subtext: enrolledCourses.length > 0 ? 'Course-enrolled syllabus' : 'No active curriculum access',
+      state: enrolledCourses.length > 0 ? 'success' : 'neutral',
     },
   ];
 
@@ -92,7 +91,7 @@ export default function StudentCoursesView({ onBack }) {
     }
 
     // Generate an authentic document blob for student offline study
-    const content = `NIVARA INSTITUTIONAL COURSE REPOSITORY\n\nCourse: ${mat.subjectName} (${mat.courseCode})\nDocument: ${mat.title}\nFaculty: ${mat.facultyName}\nRelease Date: ${mat.uploadedAt}\nFile: ${mat.fileName}\n\nDescription:\n${mat.description || 'Verified course handouts and problem sets for enrolled students.'}\n\n[Verified Institutional Material · Section AIDS-A]`;
+    const content = `NIVARA INSTITUTIONAL COURSE REPOSITORY\n\nCourse: ${mat.subjectName} (${mat.courseCode})\nDocument: ${mat.title}\nFaculty: ${mat.facultyName}\nRelease Date: ${mat.uploadedAt}\nFile: ${mat.fileName}\n\nDescription:\n${mat.description || 'Verified course handouts and problem sets for enrolled students.'}\n\n[Verified Institutional Course Material]`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -110,7 +109,7 @@ export default function StudentCoursesView({ onBack }) {
     <div className="workspace-normal" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* 1. Page Header */}
       <PageHeader
-        eyebrow="Curriculum Repository · Semester 5 · Autumn 2026"
+        eyebrow="Curriculum Repository · Enrolled Subjects"
         title="Courses & Study Materials"
         description="Course syllabi, lecture presentations, lab manuals, and faculty reference materials."
         actions={
@@ -128,7 +127,7 @@ export default function StudentCoursesView({ onBack }) {
       {/* 3. Enrolled Courses Horizontal Strip */}
       <section>
         <SectionHeader
-          title="Enrolled Semester 5 Courses"
+          title="Enrolled Subjects"
           subtitle="Official academic subject registrations"
         />
 

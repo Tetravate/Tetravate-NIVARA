@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BookOpen,
   Users,
@@ -19,62 +19,30 @@ import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader, EmptyState } from '../../workspace';
 
 export default function FacultyClasses({ onBack }) {
-  const { currentUser, students, assignments, setActiveTab } = useNivara();
-  const [selectedClassCode, setSelectedClassCode] = useState('CS301');
+  const { currentUser, students, assignments, coursesAttendance, setActiveTab } = useNivara();
+  const [selectedClassCode, setSelectedClassCode] = useState(() => (coursesAttendance && coursesAttendance[0]?.code) || '');
 
-  const facultyName = currentUser?.userName || 'Dr. Priya Raman';
+  const facultyName = currentUser?.userName || '';
 
-  // Authorized teaching classes assigned to Dr. Priya Raman
-  const assignedClasses = [
-    {
-      code: 'CS301',
-      name: 'Data Structures & Algorithms',
-      section: 'AIDS-A',
-      year: 'III Year B.Tech',
-      semester: 5,
+  // Authorized teaching classes derived dynamically from coursesAttendance
+  const assignedClasses = useMemo(() => {
+    return (coursesAttendance || []).map((c, idx) => ({
+      code: c.code,
+      name: c.name,
+      section: c.section || 'General',
+      year: c.year || 'III Year B.Tech',
+      semester: c.semester || 5,
       academicYear: '2026–2027',
-      credits: 4,
-      room: 'Computing Lab 2 (Block B)',
-      schedule: 'Mon 08:30 AM · Tue 10:00 AM',
-      enrolledCount: 28,
-      avgAttendance: 88.5,
-      pendingDeliverables: 1,
-      isPrimary: true,
-      description: 'Advanced graph traversals, shortest paths, min-heap priority queues, disjoint-set forests, and algorithmic asymptotic proofs.',
-    },
-    {
-      code: 'AI302',
-      name: 'Machine Learning Foundations Lab',
-      section: 'AIDS-A',
-      year: 'III Year B.Tech',
-      semester: 5,
-      academicYear: '2026–2027',
-      credits: 2,
-      room: 'AI Computing Lab 1',
-      schedule: 'Mon 10:15 AM · Fri 02:00 PM',
-      enrolledCount: 28,
-      avgAttendance: 92.1,
-      pendingDeliverables: 0,
-      isPrimary: false,
-      description: 'Supervised regression, classification benchmarks, gradient descent optimization, and Scikit-Learn/PyTorch laboratory implementations.',
-    },
-    {
-      code: 'AI308',
-      name: 'Applied Deep Learning & NLP',
-      section: 'AIDS-A',
-      year: 'IV Year B.Tech',
-      semester: 7,
-      academicYear: '2026–2027',
-      credits: 4,
-      room: 'Lecture Hall 302',
-      schedule: 'Wed 11:30 AM · Thu 02:15 PM',
-      enrolledCount: 32,
-      avgAttendance: 90.4,
-      pendingDeliverables: 1,
-      isPrimary: false,
-      description: 'Transformer architectures, multi-head attention mechanisms, encoder-decoder language modeling, and fine-tuning BERT/Llama foundations.',
-    },
-  ];
+      credits: c.credits || 4,
+      room: c.room || 'Lecture Hall',
+      schedule: c.schedule || 'Scheduled per timetable',
+      enrolledCount: (students || []).length,
+      avgAttendance: c.percentage || 0,
+      pendingDeliverables: (assignments || []).filter((a) => a.courseCode === c.code && !a.completed).length,
+      isPrimary: idx === 0,
+      description: c.description || `${c.name} curriculum and syllabus delivery.`,
+    }));
+  }, [coursesAttendance, students, assignments]);
 
   const totalStudents = assignedClasses.reduce((sum, c) => sum + c.enrolledCount, 0);
   const totalCredits = assignedClasses.reduce((sum, c) => sum + c.credits, 0);
@@ -83,7 +51,7 @@ export default function FacultyClasses({ onBack }) {
     {
       label: 'Assigned Teaching Classes',
       value: `${assignedClasses.length} Cohorts`,
-      subtext: 'Semester 5 & 7 Term',
+      subtext: 'Current Semester Term',
       state: 'info',
     },
     {
@@ -95,18 +63,18 @@ export default function FacultyClasses({ onBack }) {
     {
       label: 'Teaching Workload',
       value: `${totalCredits} Credits`,
-      subtext: '16 Lecture & Lab Hours/Week',
+      subtext: `${totalCredits * 3} Lecture & Lab Hours/Week`,
       state: 'success',
     },
     {
       label: 'Department Authorization',
-      value: 'AI & Data Science',
+      value: currentUser?.dept || 'Institutional Roster',
       subtext: 'Scoped Teaching Roster',
       state: 'success',
     },
   ];
 
-  const currentClass = assignedClasses.find((c) => c.code === selectedClassCode) || assignedClasses[0];
+  const currentClass = assignedClasses.find((c) => c.code === selectedClassCode) || assignedClasses[0] || null;
 
   return (
     <div className="workspace-normal" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -134,7 +102,13 @@ export default function FacultyClasses({ onBack }) {
           subtitle="Click to inspect course operations and enrolled students"
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
+        {assignedClasses.length === 0 ? (
+          <EmptyState
+            title="No Classes Assigned"
+            description="No active teaching cohorts currently assigned to your faculty profile."
+          />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
           {assignedClasses.map((cls) => {
             const isSelected = selectedClassCode === cls.code;
             return (
@@ -193,7 +167,8 @@ export default function FacultyClasses({ onBack }) {
             );
           })}
         </div>
-      </section>
+      )}
+    </section>
 
       {/* 4. Selected Class Workspace & Operations */}
       {currentClass && (

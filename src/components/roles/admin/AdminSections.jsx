@@ -13,24 +13,29 @@ export default function AdminSections() {
   const [addSectionModal, setAddSectionModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [sectionsList, setSectionsList] = useState([
-    { id: 'SEC-AIDS-A-SEM5', code: 'AIDS-A-SEM5', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, section: 'A', room: 'Room 402', capacity: 60, enrolled: 58, classAdvisor: 'Dr. Priya Raman' },
-    { id: 'SEC-AIDS-B-SEM5', code: 'AIDS-B-SEM5', deptCode: 'AIDS', deptName: 'AI & Data Science', semester: 5, section: 'B', room: 'Room 403', capacity: 60, enrolled: 56, classAdvisor: 'Prof. S. Venkatesh' },
-    { id: 'SEC-CSE-A-SEM5', code: 'CSE-A-SEM5', deptCode: 'CSE', deptName: 'Computer Science & Engg', semester: 5, section: 'A', room: 'Room 301', capacity: 60, enrolled: 60, classAdvisor: 'Dr. Rajesh K' },
-    { id: 'SEC-CSE-B-SEM5', code: 'CSE-B-SEM5', deptCode: 'CSE', deptName: 'Computer Science & Engg', semester: 5, section: 'B', room: 'Room 302', capacity: 60, enrolled: 59, classAdvisor: 'Prof. N. Meenakshi' },
-    { id: 'SEC-ECE-A-SEM5', code: 'ECE-A-SEM5', deptCode: 'ECE', deptName: 'Electronics & Comm', semester: 5, section: 'A', room: 'Room 201', capacity: 60, enrolled: 55, classAdvisor: 'Dr. Sunita Sharma' },
-    { id: 'SEC-MECH-A-SEM5', code: 'MECH-A-SEM5', deptCode: 'MECH', deptName: 'Mechanical Engineering', semester: 5, section: 'A', room: 'Room 101', capacity: 60, enrolled: 52, classAdvisor: 'Prof. R. Balaji' },
-    { id: 'SEC-CIVIL-A-SEM5', code: 'CIVIL-A-SEM5', deptCode: 'CIVIL', deptName: 'Civil Engineering', semester: 5, section: 'A', room: 'Room 104', capacity: 60, enrolled: 48, classAdvisor: 'Dr. M. Gurumurthy' },
-  ]);
+  const [sectionsList, setSectionsList] = useState(() => {
+    return (departments || []).map((d) => ({
+      id: `SEC-${d.code}-A`,
+      code: `${d.code}-A`,
+      deptCode: d.code,
+      deptName: d.name,
+      semester: 1,
+      section: 'A',
+      room: 'Lecture Hall',
+      capacity: 60,
+      enrolled: d.studentCount || 0,
+      classAdvisor: 'Department Faculty',
+    }));
+  });
 
   const [sectionForm, setSectionForm] = useState({
     code: '',
     deptCode: 'AIDS',
     semester: 5,
     section: 'A',
-    room: 'Room 405',
+    room: '',
     capacity: 60,
-    classAdvisor: 'Dr. Priya Raman',
+    classAdvisor: '',
   });
 
   const filteredSections = sectionsList.filter((s) => {

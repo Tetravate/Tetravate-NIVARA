@@ -19,6 +19,7 @@ import { useNivara } from '../context/NivaraContext';
 export default function CommandPalette() {
   const {
     currentRole,
+    authenticatedSession,
     commandPaletteOpen,
     setCommandPaletteOpen,
     switchRole,
@@ -320,14 +321,14 @@ export default function CommandPalette() {
 
     // Role switches
     const roleItems = [
-      { id: 'sw-stud', title: 'Switch to Student (Aadhi Narayanan)', subtitle: 'Student schedule, attendance, deliverables, and fees', category: 'Perspective Switch', icon: User, action: () => { switchRole('student'); setCommandPaletteOpen(false); } },
-      { id: 'sw-fac', title: 'Switch to Faculty (Dr. Priya Raman)', subtitle: 'Roster attendance, assignment grading, CIA entry', category: 'Perspective Switch', icon: User, action: () => { switchRole('faculty'); setCommandPaletteOpen(false); } },
-      { id: 'sw-hod', title: 'Switch to HOD (Dr. K. Mohan)', subtitle: 'Department metrics, at-risk alerts, leave approvals', category: 'Perspective Switch', icon: Award, action: () => { switchRole('hod'); setCommandPaletteOpen(false); } },
-      { id: 'sw-prin', title: 'Switch to Principal (Dr. Aris Thorne)', subtitle: 'Institutional overview, department radar, college broadcast', category: 'Perspective Switch', icon: Shield, action: () => { switchRole('principal'); setCommandPaletteOpen(false); } },
+      { id: 'sw-stud', title: 'Switch to Student', subtitle: 'Student schedule, attendance, deliverables, and fees', category: 'Perspective Switch', icon: User, action: () => { switchRole('student'); setCommandPaletteOpen(false); } },
+      { id: 'sw-fac', title: 'Switch to Faculty', subtitle: 'Roster attendance, assignment grading, CIA entry', category: 'Perspective Switch', icon: User, action: () => { switchRole('faculty'); setCommandPaletteOpen(false); } },
+      { id: 'sw-hod', title: 'Switch to HOD', subtitle: 'Department metrics, at-risk alerts, leave approvals', category: 'Perspective Switch', icon: Award, action: () => { switchRole('hod'); setCommandPaletteOpen(false); } },
+      { id: 'sw-prin', title: 'Switch to Principal', subtitle: 'Institutional overview, department radar, college broadcast', category: 'Perspective Switch', icon: Shield, action: () => { switchRole('principal'); setCommandPaletteOpen(false); } },
       { id: 'sw-adm', title: 'Switch to ERP Administrator', subtitle: 'Master structure, room collisions, system users', category: 'Perspective Switch', icon: Shield, action: () => { switchRole('admin'); setCommandPaletteOpen(false); } },
-      { id: 'sw-exam', title: 'Switch to Exam Cell (Prof. V. Ramanathan)', subtitle: 'Examination schedules, seating rosters, publish results', category: 'Perspective Switch', icon: BookOpen, action: () => { switchRole('exam_cell'); setCommandPaletteOpen(false); } },
-      { id: 'sw-fin', title: 'Switch to Finance (Mrs. S. Mythili)', subtitle: 'Fee structures, student dues, payment verification ledger', category: 'Perspective Switch', icon: CreditCard, action: () => { switchRole('finance'); setCommandPaletteOpen(false); } },
-      { id: 'sw-place', title: 'Switch to Placement Officer (Dr. S. Kapoor)', subtitle: 'Recruitment drives, eligibility filters, applicant pipeline', category: 'Perspective Switch', icon: Briefcase, action: () => { switchRole('placement'); setCommandPaletteOpen(false); } },
+      { id: 'sw-exam', title: 'Switch to Exam Cell', subtitle: 'Examination schedules, seating rosters, publish results', category: 'Perspective Switch', icon: BookOpen, action: () => { switchRole('exam_cell'); setCommandPaletteOpen(false); } },
+      { id: 'sw-fin', title: 'Switch to Finance', subtitle: 'Fee structures, student dues, payment verification ledger', category: 'Perspective Switch', icon: CreditCard, action: () => { switchRole('finance'); setCommandPaletteOpen(false); } },
+      { id: 'sw-place', title: 'Switch to Placement Officer', subtitle: 'Recruitment drives, eligibility filters, applicant pipeline', category: 'Perspective Switch', icon: Briefcase, action: () => { switchRole('placement'); setCommandPaletteOpen(false); } },
     ];
 
     // Audit trail action
@@ -343,9 +344,11 @@ export default function CommandPalette() {
       },
     });
 
-    return [...items, ...roleItems];
+    const isDevOrSandbox = Boolean(import.meta.env.DEV || authenticatedSession?.provider === 'developer_switch');
+    return isDevOrSandbox ? [...items, ...roleItems] : items;
   }, [
     currentRole,
+    authenticatedSession,
     coursesAttendance,
     assignments,
     students,

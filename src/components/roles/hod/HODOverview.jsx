@@ -29,31 +29,63 @@ export default function HODOverview() {
   const [selectedSection, setSelectedSection] = useState('ALL');
 
   // Scoped strictly to Department of AI & Data Science
+  const deptStudents = useMemo(() => {
+    return (students || []).filter((s) => s.deptCode === 'AIDS' || s.department?.includes('AI & Data Science'));
+  }, [students]);
+
+  const deptFaculty = useMemo(() => {
+    return (facultyMembers || []).filter((f) => f.deptCode === 'AIDS' || f.department?.includes('AI & Data Science'));
+  }, [facultyMembers]);
+
   const dept = (departments || []).find((d) => d.code === 'AIDS') || {
     code: 'AIDS',
     name: 'Department of AI & Data Science',
-    hod: 'Dr. K. Mohan',
-    studentCount: 380,
-    facultyCount: 14,
-    attendancePct: 84.8,
-    avgCgpa: 8.42,
-    placedPct: 82,
-    atRiskCount: 2,
+    hod: 'Head of Department',
+    studentCount: deptStudents.length,
+    facultyCount: deptFaculty.length,
+    attendancePct: 0,
+    avgCgpa: 0,
+    placedPct: 0,
+    atRiskCount: deptStudents.filter((s) => (s.attendancePct || 0) < 75 || (s.backlogs || 0) > 0).length,
   };
 
   const programs = [
-    { code: 'BTECH-AIDS', name: 'B.Tech Artificial Intelligence & Data Science', students: 340, duration: '4 Years (8 Semesters)' },
-    { code: 'MTECH-MLR', name: 'M.Tech Machine Learning & Robotics', students: 40, duration: '2 Years (4 Semesters)' },
+    { code: 'BTECH-AIDS', name: 'B.Tech Artificial Intelligence & Data Science', students: deptStudents.length, duration: '4 Years (8 Semesters)' },
   ];
 
-  const cohorts = [
-    { year: '3rd Year', semester: 'Semester 5', section: 'AIDS-A', students: 60, advisor: 'Dr. Priya Raman', avgAtt: '85.4%', avgCgpa: '8.48' },
-    { year: '3rd Year', semester: 'Semester 5', section: 'AIDS-B', students: 60, advisor: 'Prof. Ananya Sen', avgAtt: '81.2%', avgCgpa: '8.35' },
-    { year: '2nd Year', semester: 'Semester 3', section: 'AIDS-A', students: 65, advisor: 'Prof. S. Venkatesh', avgAtt: '86.1%', avgCgpa: '8.52' },
-    { year: '2nd Year', semester: 'Semester 3', section: 'AIDS-B', students: 65, advisor: 'Dr. Rajesh K.', avgAtt: '85.0%', avgCgpa: '8.40' },
-    { year: '4th Year', semester: 'Semester 7', section: 'AIDS-A', students: 65, advisor: 'Dr. K. Mohan', avgAtt: '83.2%', avgCgpa: '8.65' },
-    { year: '1st Year', semester: 'Semester 1', section: 'AIDS-A', students: 65, advisor: 'Dr. S. Kapoor', avgAtt: '88.5%', avgCgpa: '8.20' },
-  ];
+  const cohorts = useMemo(() => {
+    const groups = {};
+    deptStudents.forEach((s) => {
+      const year = s.year || (s.semester ? `${Math.ceil(s.semester / 2)} Year` : 'Current Year');
+      const semester = s.semester ? `Semester ${s.semester}` : 'Semester 1';
+      const section = s.section ? `AIDS-${s.section}` : 'AIDS-A';
+      const key = `${year}-${semester}-${section}`;
+      if (!groups[key]) {
+        groups[key] = {
+          year,
+          semester,
+          section,
+          students: 0,
+          advisor: s.advisor || 'Assigned Faculty Advisor',
+          totalAtt: 0,
+          totalCgpa: 0,
+        };
+      }
+      groups[key].students += 1;
+      groups[key].totalAtt += (s.attendancePct || 0);
+      groups[key].totalCgpa += (s.cgpa || 0);
+    });
+
+    return Object.values(groups).map((g) => ({
+      year: g.year,
+      semester: g.semester,
+      section: g.section,
+      students: g.students,
+      advisor: g.advisor,
+      avgAtt: g.students > 0 ? `${(g.totalAtt / g.students).toFixed(1)}%` : '0%',
+      avgCgpa: g.students > 0 ? (g.totalCgpa / g.students).toFixed(2) : '0.00',
+    }));
+  }, [deptStudents]);
 
   const filteredCohorts = useMemo(() => {
     return cohorts.filter((c) => {
@@ -61,7 +93,7 @@ export default function HODOverview() {
       if (selectedSection !== 'ALL' && c.section !== selectedSection) return false;
       return true;
     });
-  }, [selectedYear, selectedSection]);
+  }, [cohorts, selectedYear, selectedSection]);
 
   const metrics = [
     {
@@ -255,7 +287,7 @@ export default function HODOverview() {
               <strong style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>Computing Lab 2 (Block B)</strong>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              64 High-Performance Workstations · CUDA & GCC Configured · In-Charge: Dr. Priya Raman
+              64 High-Performance Workstations · CUDA & GCC Configured · Department Computing Facility
             </div>
           </div>
 
@@ -265,7 +297,7 @@ export default function HODOverview() {
               <strong style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>AI Computing Lab 1 (Block B)</strong>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              48 GPU Accelerated Terminals · PyTorch & TensorFlow Cluster · In-Charge: Dr. Rajesh K.
+              48 GPU Accelerated Terminals · PyTorch & TensorFlow Cluster · Department AI Facility
             </div>
           </div>
 
@@ -275,7 +307,7 @@ export default function HODOverview() {
               <strong style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>Cognitive Neural Systems Center</strong>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Specialized PG Research Lab · Edge AI & Jetson Dev Kits · In-Charge: Dr. K. Mohan
+              Specialized Research Lab · Edge AI & Jetson Dev Kits · Research Facility
             </div>
           </div>
         </div>

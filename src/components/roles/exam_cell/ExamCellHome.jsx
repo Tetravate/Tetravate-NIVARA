@@ -20,6 +20,7 @@ export default function ExamCellHome({ onNavigate }) {
     revaluationRequests,
     auditLogs,
     roomConflicts,
+    students,
     setInternalMarksLock,
     showToast,
   } = useNivara();
@@ -53,7 +54,7 @@ export default function ExamCellHome({ onNavigate }) {
     {
       label: 'Result Gazette Status',
       value: publishedResults?.status === 'published' ? 'Published' : 'Moderation Ready',
-      subtext: `Pass rate benchmark: ${publishedResults?.departmentPassPct || 94.2}%`,
+      subtext: publishedResults?.departmentPassPct ? `Pass rate benchmark: ${publishedResults.departmentPassPct}%` : 'Result moderation in progress',
       state: publishedResults?.status === 'published' ? 'success' : 'neutral',
     },
   ];
@@ -412,24 +413,32 @@ export default function ExamCellHome({ onNavigate }) {
                 Venue: <strong>{seatingModal.venue}</strong> · Scheduled: {seatingModal.dateFormatted} ({seatingModal.time})
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', background: 'var(--bg-surface)', borderRadius: '3px' }}>
-                  <span>22AIDS001 - Aarav Sharma</span>
-                  <strong>Desk B-11</strong>
+              {(!students || students.length === 0) ? (
+                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  No candidate seating allocations assigned yet.
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', background: 'var(--bg-surface)', borderRadius: '3px' }}>
-                  <span>22AIDS003 - Arun Kumar</span>
-                  <strong>Desk B-12</strong>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {students.slice(0, 8).map((st, idx) => (
+                    <div
+                      key={st.id || idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '0.45rem 0.65rem',
+                        background: idx === 0 ? 'var(--bg-hover)' : 'var(--bg-surface)',
+                        borderRadius: '3px',
+                        border: idx === 0 ? '1px solid var(--border-subtle)' : 'none',
+                      }}
+                    >
+                      <span>{st.rollNo || st.roll || st.id} - {st.name}</span>
+                      <strong style={{ color: idx === 0 ? 'var(--brand-primary)' : 'inherit' }}>
+                        Desk B-{11 + idx}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', background: 'var(--bg-surface)', borderRadius: '3px' }}>
-                  <span>22AIDS014 - Kavin Venkatesh</span>
-                  <strong>Desk B-13</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', background: 'var(--bg-hover)', borderRadius: '3px', border: '1px solid var(--brand-primary)' }}>
-                  <span>22AIDS042 - Aadhi Narayanan</span>
-                  <strong style={{ color: 'var(--brand-primary)' }}>{seatingModal.seatingSeat || 'Desk B-14'}</strong>
-                </div>
-              </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                 <button

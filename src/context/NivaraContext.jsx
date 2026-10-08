@@ -22,12 +22,58 @@ export function useNivara() {
 }
 
 const SYNC_CHANNEL_NAME = 'nivara_realtime_sync';
+const STORAGE_CLEANUP_VERSION = 'nivara_v2_clean_runtime';
+
+function purgeLegacyMockStorage() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const isCleaned = localStorage.getItem(STORAGE_CLEANUP_VERSION);
+    if (!isCleaned) {
+      const keysToPurge = [
+        'nivara_db_students',
+        'nivara_db_departments',
+        'nivara_db_coursesAttendance',
+        'nivara_db_facultyRoster',
+        'nivara_db_assignments',
+        'nivara_db_internalMarks',
+        'nivara_db_examSessions',
+        'nivara_db_publishedResults',
+        'nivara_db_feeStructures',
+        'nivara_db_paymentHistory',
+        'nivara_db_refundRequests',
+        'nivara_db_companies',
+        'nivara_db_placementDrives',
+        'nivara_db_studentPlacementApplications',
+        'nivara_db_placementInterviews',
+        'nivara_db_placementOffers',
+        'nivara_db_leaveRequests',
+        'nivara_db_auditLogs',
+        'nivara_db_notifications',
+        'nivara_db_facultyMembers',
+        'nivara_db_systemUsers',
+        'nivara_db_roomConflicts',
+        'nivara_db_studyMaterials',
+        'nivara_db_timetableEntries',
+        'nivara_db_courseMaterials',
+        'nivara_db_revaluationRequests',
+        'nivara_db_feeConcessions',
+        'nivara_db_announcements',
+      ];
+      keysToPurge.forEach((k) => localStorage.removeItem(k));
+      localStorage.setItem(STORAGE_CLEANUP_VERSION, 'true');
+    }
+  } catch {
+    // Ignore storage exceptions
+  }
+}
+
+purgeLegacyMockStorage();
 
 function getStoredOrFallback(key, fallback) {
   try {
     const val = localStorage.getItem(`nivara_db_${key}`);
     return val ? JSON.parse(val) : fallback;
-  } catch (e) {
+  } catch {
     return fallback;
   }
 }
@@ -35,7 +81,7 @@ function getStoredOrFallback(key, fallback) {
 function saveToStorage(key, val) {
   try {
     localStorage.setItem(`nivara_db_${key}`, JSON.stringify(val));
-  } catch (e) {
+  } catch {
     // safe fallback
   }
 }
@@ -47,7 +93,7 @@ function broadcastSync(type, data) {
       channel.postMessage({ type, data, timestamp: Date.now() });
       channel.close();
     }
-  } catch (e) {
+  } catch {
     // safe fallback
   }
 }
@@ -331,1007 +377,75 @@ export function NivaraProvider({ children }) {
   const currentUser = authenticatedSession?.user || ROLES.find((r) => r.id === currentRole) || ROLES[0];
 
   // -------------------------------------------------------------
-  // CENTRALIZED SHARED DATA STORE
+  // CENTRALIZED SHARED DATA STORE (ZERO RUNTIME MOCK DATA)
+  // Authoritative data is loaded asynchronously from Supabase.
+  // Genuine empty database tables ([]) correctly surface empty states.
   // -------------------------------------------------------------
 
   // 1. Central Student Directory
-  const [students, setStudents] = useState(() => getStoredOrFallback('students', [
-    {
-      id: '2024-AIDS-042',
-      rollNo: '22AIDS042',
-      name: 'Aadhi Narayanan',
-      email: 'aadhi.narayanan@nivara.edu',
-      department: 'AI & Data Science',
-      deptCode: 'AIDS',
-      year: '3rd Year',
-      semester: 5,
-      cgpa: 8.72,
-      standing: 'Good Standing',
-      attendancePct: 87,
-      backlogs: 0,
-      feeStatus: 'pending', // pending | paid
-      feePendingAmount: 45000,
-      feeDueDate: '15 Oct 2026',
-      advisor: 'Dr. Priya Raman',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '2024-AIDS-014',
-      rollNo: '22AIDS014',
-      name: 'Kavin Venkatesh',
-      email: 'kavin.v@nivara.edu',
-      department: 'AI & Data Science',
-      deptCode: 'AIDS',
-      year: '3rd Year',
-      semester: 5,
-      cgpa: 6.95,
-      standing: 'Academic Risk',
-      attendancePct: 68, // Below 75% cutoff
-      backlogs: 2,
-      feeStatus: 'paid',
-      feePendingAmount: 0,
-      advisor: 'Dr. Priya Raman',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '2024-AIDS-003',
-      rollNo: '22AIDS003',
-      name: 'Arun Kumar',
-      email: 'arun.k@nivara.edu',
-      department: 'AI & Data Science',
-      deptCode: 'AIDS',
-      year: '3rd Year',
-      semester: 5,
-      cgpa: 9.15,
-      standing: 'Dean List',
-      attendancePct: 94,
-      backlogs: 0,
-      feeStatus: 'paid',
-      feePendingAmount: 0,
-      advisor: 'Dr. K. Mohan',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '2024-AIDS-027',
-      rollNo: '22AIDS027',
-      name: 'Tanvi Saxena',
-      email: 'tanvi.s@nivara.edu',
-      department: 'AI & Data Science',
-      deptCode: 'AIDS',
-      year: '3rd Year',
-      semester: 5,
-      cgpa: 7.40,
-      standing: 'Good Standing',
-      attendancePct: 79,
-      backlogs: 0,
-      feeStatus: 'paid',
-      feePendingAmount: 0,
-      advisor: 'Prof. Ananya Sen',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '2024-CSE-102',
-      rollNo: '22CSE102',
-      name: 'Bhavana Patel',
-      email: 'bhavana.p@nivara.edu',
-      department: 'Computer Science',
-      deptCode: 'CSE',
-      year: '3rd Year',
-      semester: 5,
-      cgpa: 8.45,
-      standing: 'Good Standing',
-      attendancePct: 91,
-      backlogs: 0,
-      feeStatus: 'paid',
-      feePendingAmount: 0,
-      advisor: 'Dr. S. Rangan',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80',
-    },
-  ]));
+  const [students, setStudents] = useState(() => getStoredOrFallback('students', []));
 
-  // 2. Department Master Data (Shared across HOD, Principal, Admin)
-  const [departments, setDepartments] = useState(() => getStoredOrFallback('departments', [
-    {
-      code: 'AIDS',
-      name: 'Artificial Intelligence & Data Science',
-      hod: 'Dr. K. Mohan',
-      studentCount: 380,
-      facultyCount: 24,
-      attendancePct: 88.5,
-      atRiskCount: 8,
-      avgCgpa: 8.12,
-      placedPct: 78,
-    },
-    {
-      code: 'CSE',
-      name: 'Computer Science & Engineering',
-      hod: 'Dr. S. Rangan',
-      studentCount: 640,
-      facultyCount: 38,
-      attendancePct: 91.2,
-      atRiskCount: 12,
-      avgCgpa: 8.25,
-      placedPct: 84,
-    },
-    {
-      code: 'ECE',
-      name: 'Electronics & Communication',
-      hod: 'Dr. M. Chitra',
-      studentCount: 510,
-      facultyCount: 30,
-      attendancePct: 89.6,
-      atRiskCount: 15,
-      avgCgpa: 7.85,
-      placedPct: 72,
-    },
-    {
-      code: 'MECH',
-      name: 'Mechanical Engineering',
-      hod: 'Dr. R. Natarajan',
-      studentCount: 490,
-      facultyCount: 28,
-      attendancePct: 86.4,
-      atRiskCount: 22,
-      avgCgpa: 7.45,
-      placedPct: 65,
-    },
-    {
-      code: 'CIVIL',
-      name: 'Civil Engineering',
-      hod: 'Dr. V. Sundaram',
-      studentCount: 462,
-      facultyCount: 28,
-      attendancePct: 87.8,
-      atRiskCount: 18,
-      avgCgpa: 7.60,
-      placedPct: 61,
-    },
-  ]));
+  // 2. Department Master Data
+  const [departments, setDepartments] = useState(() => getStoredOrFallback('departments', []));
 
-  // 3. Central Attendance Sessions (Synchronized: Faculty -> Student -> HOD -> Principal)
-  const [coursesAttendance, setCoursesAttendance] = useState(() => getStoredOrFallback('coursesAttendance', [
-    {
-      id: 'sub-dsa',
-      code: 'CS301',
-      name: 'Data Structures & Algorithms',
-      faculty: 'Dr. Priya Raman',
-      deptCode: 'AIDS',
-      attended: 23,
-      total: 25,
-      percentage: 92,
-      nextClass: 'Today · 10:00 AM · Lab 2',
-      room: 'Computing Lab 2 (Block B)',
-      safeToMiss: 5,
-      canMissExplanation: 'You can safely miss up to 5 more classes before dropping below the 75% cutoff threshold.',
-    },
-    {
-      id: 'sub-dbms',
-      code: 'CS304',
-      name: 'Database Management Systems',
-      faculty: 'Dr. K. Mohan',
-      deptCode: 'AIDS',
-      attended: 19,
-      total: 22,
-      percentage: 86,
-      nextClass: 'Today · 02:00 PM · Room B104',
-      room: 'Room B104',
-      safeToMiss: 3,
-      canMissExplanation: 'You can safely miss up to 3 more classes before dropping below the 75% cutoff threshold.',
-    },
-    {
-      id: 'sub-oop',
-      code: 'CS302',
-      name: 'Object-Oriented Programming (Java)',
-      faculty: 'Prof. Ananya Sen',
-      deptCode: 'AIDS',
-      attended: 18,
-      total: 23,
-      percentage: 78,
-      nextClass: 'Thursday · 10:30 AM · Room C302',
-      room: 'Room C302',
-      safeToMiss: 1, // Alert
-      canMissExplanation: 'Warning: You can only miss 1 more class before dropping below 75% and triggering an attendance lock.',
-    },
-    {
-      id: 'sub-dm',
-      code: 'MA301',
-      name: 'Discrete Structures',
-      faculty: 'Prof. S. Venkatesh',
-      deptCode: 'AIDS',
-      attended: 20,
-      total: 22,
-      percentage: 91,
-      nextClass: 'Tomorrow · 08:30 AM · Room A204',
-      room: 'Room A204',
-      safeToMiss: 4,
-      canMissExplanation: 'You can safely miss up to 4 more classes before dropping below the 75% cutoff threshold.',
-    },
-    {
-      id: 'sub-ml',
-      code: 'AI302',
-      name: 'Machine Learning Foundations Lab',
-      faculty: 'Dr. Rajesh K.',
-      deptCode: 'AIDS',
-      attended: 19,
-      total: 20,
-      percentage: 95,
-      nextClass: 'Friday · 02:00 PM · AI Lab 1',
-      room: 'AI Lab 1',
-      safeToMiss: 5,
-      canMissExplanation: 'Outstanding consistency. You have 5 safe misses remaining without affecting exam eligibility.',
-    },
-  ]));
+  // 3. Central Attendance Sessions
+  const [coursesAttendance, setCoursesAttendance] = useState(() => getStoredOrFallback('coursesAttendance', []));
 
-  // Faculty Class Roster for Data Structures (CS301)
-  const [facultyRoster, setFacultyRoster] = useState(() => getStoredOrFallback('facultyRoster', [
-    { id: '2024-AIDS-001', roll: '22AIDS001', name: 'Aarav Sharma', status: 'present' },
-    { id: '2024-AIDS-002', roll: '22AIDS002', name: 'Ananya Iyer', status: 'present' },
-    { id: '2024-AIDS-003', roll: '22AIDS003', name: 'Arun Kumar', status: 'present' },
-    { id: '2024-AIDS-014', roll: '22AIDS014', name: 'Kavin Venkatesh', status: 'absent' },
-    { id: '2024-AIDS-018', roll: '22AIDS018', name: 'Naveen Roy', status: 'absent' },
-    { id: '2024-AIDS-027', roll: '22AIDS027', name: 'Tanvi Saxena', status: 'absent' },
-    { id: '2024-AIDS-042', roll: '22AIDS042', name: 'Aadhi Narayanan', status: 'present' },
-  ]));
+  // Faculty Class Roster
+  const [facultyRoster, setFacultyRoster] = useState(() => getStoredOrFallback('facultyRoster', []));
 
   // 4. Assignments & Submissions
-  const [assignments, setAssignments] = useState(() => getStoredOrFallback('assignments', [
-    {
-      id: 'asg-1',
-      title: 'C++ Graph Traversal & Dijkstra Algorithm',
-      subject: 'Data Structures (CS301)',
-      courseCode: 'CS301',
-      dueFormatted: 'Tomorrow · 11:59 PM',
-      dueTimestamp: '2026-10-08T23:59:00',
-      urgency: 'urgent',
-      progress: 80,
-      completed: false, // Student completion status
-      faculty: 'Dr. Priya Raman',
-      totalEnrolled: 28,
-      submittedCount: 24,
-      gradedCount: 18,
-      weightage: '10% of Internal Mark',
-      brief: 'Implement Dijkstra shortest path using min-heap. Include benchmarks on a graph with 10k vertices.',
-      submissions: [
-        { studentId: '2024-AIDS-042', studentName: 'Aadhi Narayanan', status: 'pending', submittedAt: null, grade: null, feedback: null },
-        { studentId: '2024-AIDS-003', studentName: 'Arun Kumar', status: 'graded', submittedAt: 'Yesterday', grade: '20 / 20', feedback: 'Perfect adjacency list implementation.' },
-        { studentId: '2024-AIDS-014', studentName: 'Kavin Venkatesh', status: 'submitted', submittedAt: '2 hours ago', grade: null, feedback: null },
-      ],
-    },
-    {
-      id: 'asg-2',
-      title: 'DBMS B+ Tree Indexing & Query Tuning',
-      subject: 'Database Management (CS304)',
-      courseCode: 'CS304',
-      dueFormatted: 'Friday · 05:00 PM',
-      dueTimestamp: '2026-10-10T17:00:00',
-      urgency: 'important',
-      progress: 40,
-      completed: false,
-      faculty: 'Dr. K. Mohan',
-      totalEnrolled: 28,
-      submittedCount: 14,
-      gradedCount: 0,
-      weightage: '5% of Internal Mark',
-      brief: 'Compare query plan execution cost before and after B+ tree composite indexing on 500k rows.',
-      submissions: [
-        { studentId: '2024-AIDS-042', studentName: 'Aadhi Narayanan', status: 'pending', submittedAt: null, grade: null, feedback: null },
-      ],
-    },
-    {
-      id: 'asg-3',
-      title: 'Discrete Math Proof Set: Recurrence Relations',
-      subject: 'Mathematics III (MA301)',
-      courseCode: 'MA301',
-      dueFormatted: 'Monday · 09:00 AM',
-      dueTimestamp: '2026-10-13T09:00:00',
-      urgency: 'normal',
-      progress: 15,
-      completed: false,
-      faculty: 'Prof. S. Venkatesh',
-      totalEnrolled: 28,
-      submittedCount: 6,
-      gradedCount: 0,
-      weightage: 'Problem Set #4',
-      brief: 'Prove master theorem cases for non-polynomial subproblem growths.',
-      submissions: [],
-    },
-    {
-      id: 'asg-4',
-      title: 'Linear Regression from Scratch with NumPy',
-      subject: 'Machine Learning (AI302)',
-      courseCode: 'AI302',
-      dueFormatted: 'Submitted Oct 4',
-      dueTimestamp: '2026-10-04T12:00:00',
-      urgency: 'completed',
-      progress: 100,
-      completed: true,
-      grade: '19 / 20',
-      faculty: 'Dr. Rajesh K.',
-      totalEnrolled: 28,
-      submittedCount: 28,
-      gradedCount: 28,
-      brief: 'Vectorized gradient descent implementation and learning curve visualization.',
-      feedback: 'Clean vectorization and excellent learning curve analysis.',
-      submissions: [
-        { studentId: '2024-AIDS-042', studentName: 'Aadhi Narayanan', status: 'graded', submittedAt: '04 Oct 2026', grade: '19 / 20', feedback: 'Clean vectorization and excellent learning curve analysis.' },
-      ],
-    },
-  ]));
+  const [assignments, setAssignments] = useState(() => getStoredOrFallback('assignments', []));
 
   // 5. Internal Assessment Marks
-  const [internalMarks, setInternalMarks] = useState(() => getStoredOrFallback('internalMarks', [
-    { courseCode: 'CS301', subject: 'Data Structures & Algorithms', maxMark: 25, scoredMark: 23, status: 'locked', enteredBy: 'Dr. Priya Raman' },
-    { courseCode: 'CS304', subject: 'Database Management Systems', maxMark: 25, scoredMark: 21, status: 'locked', enteredBy: 'Dr. K. Mohan' },
-    { courseCode: 'CS302', subject: 'Object Oriented Programming', maxMark: 25, scoredMark: 19, status: 'locked', enteredBy: 'Prof. Ananya Sen' },
-    { courseCode: 'MA301', subject: 'Discrete Mathematics', maxMark: 25, scoredMark: 24, status: 'locked', enteredBy: 'Prof. S. Venkatesh' },
-    { courseCode: 'AI302', subject: 'Machine Learning Foundations Lab', maxMark: 25, scoredMark: 24, status: 'draft', enteredBy: 'Dr. Rajesh K.' },
-  ]));
+  const [internalMarks, setInternalMarks] = useState(() => getStoredOrFallback('internalMarks', []));
 
   // 6. Examination Sessions & Hall Tickets
-  const [examSessions, setExamSessions] = useState(() => getStoredOrFallback('examSessions', [
-    {
-      id: 'ex-1',
-      subject: 'Database Management Systems',
-      code: 'CS304',
-      examType: 'Mid-Semester Internal II',
-      dateFormatted: '18 Oct 2026',
-      day: 'Saturday',
-      time: '10:00 AM – 12:00 PM',
-      venue: 'Block B · Examination Hall 2',
-      seatingSeat: 'Desk B-14',
-      daysRemaining: 11,
-      resultsPublished: false,
-    },
-    {
-      id: 'ex-2',
-      subject: 'Data Structures & Algorithms',
-      code: 'CS301',
-      examType: 'Practical Lab Assessment',
-      dateFormatted: '22 Oct 2026',
-      day: 'Wednesday',
-      time: '02:00 PM – 05:00 PM',
-      venue: 'Computing Center 3',
-      seatingSeat: 'Terminal CC3-28',
-      daysRemaining: 15,
-      resultsPublished: false,
-    },
-    {
-      id: 'ex-3',
-      subject: 'Discrete Mathematics',
-      code: 'MA301',
-      examType: 'Mid-Semester Internal II',
-      dateFormatted: '28 Oct 2026',
-      day: 'Tuesday',
-      time: '09:30 AM – 11:30 AM',
-      venue: 'Main Academic Auditorium',
-      seatingSeat: 'Hall Desk M-42',
-      daysRemaining: 21,
-      resultsPublished: false,
-    },
-  ]));
+  const [examSessions, setExamSessions] = useState(() => getStoredOrFallback('examSessions', []));
 
-  const [publishedResults, setPublishedResults] = useState(() => getStoredOrFallback('publishedResults', {
-    semester: 4,
-    status: 'published', // 'published' | 'under_moderation'
-    publishedAt: '15 Aug 2026',
-    overallCgpa: 8.72,
-    creditsEarned: 82,
-    departmentPassPct: 94.2,
-  }));
+  const [publishedResults, setPublishedResults] = useState(() => getStoredOrFallback('publishedResults', null));
 
   // 7. Finance & Fees
-  const [feeStructures, setFeeStructures] = useState(() => getStoredOrFallback('feeStructures', [
-    {
-      id: 'fee-sem5',
-      name: 'Autumn 2026 Semester 5 Tuition & Lab Dues',
-      department: 'AI & Data Science',
-      amount: 45000,
-      dueDate: '15 Oct 2026',
-      totalBilled: 17100000,
-      totalCollected: 14850000,
-      studentsPaidCount: 330,
-      studentsPendingCount: 50,
-    },
-    {
-      id: 'fee-exam',
-      name: 'Mid-Term Assessment Examination Fee',
-      department: 'All Departments',
-      amount: 2500,
-      dueDate: '10 Oct 2026',
-      totalBilled: 6205000,
-      totalCollected: 5800000,
-      studentsPaidCount: 2320,
-      studentsPendingCount: 162,
-    },
-  ]));
+  const [feeStructures, setFeeStructures] = useState(() => getStoredOrFallback('feeStructures', []));
 
-  const [paymentHistory, setPaymentHistory] = useState(() => getStoredOrFallback('paymentHistory', [
-    {
-      id: 'pay-2026-081',
-      studentId: '2024-AIDS-042',
-      studentName: 'Aadhi Narayanan',
-      rollNo: '22AIDS042',
-      description: 'Semester 4 Tuition & Academic Fees',
-      amount: 45000,
-      paidOn: '14 Jan 2026',
-      receiptNo: 'REC-2026-NIV-8921',
-      mode: 'Online UPI / Card Gateway (Demo Verified)',
-      status: 'verified',
-    },
-    {
-      id: 'pay-2026-042',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      rollNo: '22AIDS003',
-      description: 'Autumn 2026 Semester 5 Tuition & Lab Dues',
-      amount: 45000,
-      paidOn: '02 Oct 2026',
-      receiptNo: 'REC-2026-NIV-8412',
-      mode: 'Bank Challan (Offline Verified)',
-      status: 'verified',
-    },
-    {
-      id: 'pay-2026-019',
-      studentId: '2024-AIDS-014',
-      studentName: 'Kavin Venkatesh',
-      rollNo: '22AIDS014',
-      description: 'Mid-Term Assessment Examination Fee',
-      amount: 2500,
-      paidOn: '25 Sep 2026',
-      receiptNo: 'REC-2026-NIV-7945',
-      mode: 'NEFT Transfer (Verified Voucher)',
-      status: 'verified',
-    },
-  ]));
+  const [paymentHistory, setPaymentHistory] = useState(() => getStoredOrFallback('paymentHistory', []));
 
   // 7b. Student Refunds Pipeline
-  const [refundRequests, setRefundRequests] = useState(() => getStoredOrFallback('refundRequests', [
-    {
-      id: 'ref-1',
-      studentId: '2024-AIDS-014',
-      studentName: 'Kavin Venkatesh',
-      rollNo: '22AIDS014',
-      paymentId: 'pay-2026-019',
-      receiptNo: 'REC-2026-NIV-7945',
-      amount: 2500,
-      reason: 'Duplicate payment of Mid-Term Assessment fee via NEFT and UPI duplicate transaction.',
-      status: 'under_review',
-      requestedDate: '04 Oct 2026',
-      processedDate: null,
-      authorizedUser: 'Mrs. S. Mythili (Accounts Bursar)',
-      mode: 'Manual Institutional NEFT Reversal',
-      remarks: 'Bank transaction reference UTR verified with treasury account.',
-    },
-    {
-      id: 'ref-2',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      rollNo: '22AIDS003',
-      paymentId: 'pay-2026-042',
-      receiptNo: 'REC-2026-NIV-8412',
-      amount: 5000,
-      reason: 'Hostel caution deposit refund on room reallocation to day-scholar status.',
-      status: 'processed',
-      requestedDate: '28 Sep 2026',
-      processedDate: '02 Oct 2026',
-      authorizedUser: 'Mrs. S. Mythili (Accounts Bursar)',
-      mode: 'Manual Institutional NEFT Reversal',
-      remarks: 'Warden clearance certificate verified and voucher reconciled.',
-    },
-  ]));
-
+  const [refundRequests, setRefundRequests] = useState(() => getStoredOrFallback('refundRequests', []));
 
   // 8. Placement Opportunities, Companies, Applications, Interviews & Offers
-  const [companies, setCompanies] = useState(() => getStoredOrFallback('companies', [
-    {
-      id: 'comp-1',
-      name: 'Google DeepMind & Systems',
-      category: 'Tier-1 Super Dream · Artificial Intelligence & Cloud',
-      website: 'https://deepmind.google',
-      hrContact: 'Rohan Deshmukh (Lead Campus Recruiter, APAC)',
-      hrEmail: 'r.deshmukh@google.com',
-      hrPhone: '+91 80 6721 8900',
-      activeStatus: 'active',
-      notes: 'Day-1 corporate partner. Algorithmic screening and systems rounds required.',
-    },
-    {
-      id: 'comp-2',
-      name: 'Tetravate Engineering Labs',
-      category: 'Product Engineering & Distributed Systems',
-      website: 'https://tetravate.io',
-      hrContact: 'Meera Krishnan (Director of University Relations)',
-      hrEmail: 'careers@tetravate.io',
-      hrPhone: '+91 44 4890 2200',
-      activeStatus: 'active',
-      notes: 'Core hiring partner for Full-Stack Systems, Distributed Cloud, and AI Systems.',
-    },
-    {
-      id: 'comp-3',
-      name: 'Microsoft Azure Core',
-      category: 'Tier-1 Cloud Infrastructure & Enterprise Systems',
-      website: 'https://microsoft.com/cloud',
-      hrContact: 'Anand Vardhan (University Talent Acquisition)',
-      hrEmail: 'anand.v@microsoft.com',
-      hrPhone: '+91 40 6698 1000',
-      activeStatus: 'active',
-      notes: 'Annual campus partnership. Cloud virtualization & OS engineering roles.',
-    },
-    {
-      id: 'comp-4',
-      name: 'Amazon AWS Cloud',
-      category: 'Cloud Computing & Distributed Data Systems',
-      website: 'https://aws.amazon.com',
-      hrContact: 'Deepak Nambiar (Regional Talent Partner)',
-      hrEmail: 'deepak.n@amazon.com',
-      hrPhone: '+91 80 4103 4000',
-      activeStatus: 'active',
-      notes: 'Upcoming Spring 2027 hiring pool engagement scheduled.',
-    },
-  ]));
+  const [companies, setCompanies] = useState(() => getStoredOrFallback('companies', []));
 
-  const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', [
-    {
-      id: 'drive-1',
-      company: 'Google DeepMind & Systems',
-      role: 'Research Software Engineer',
-      packageLpa: '28 - 34 LPA',
-      location: 'Bangalore / Hybrid',
-      minCgpa: 8.5,
-      allowedBacklogs: 0,
-      deadline: '16 Oct 2026',
-      driveDate: '24 Oct 2026',
-      status: 'active',
-      eligibleCount: 42,
-      appliedCount: 28,
-      selectedCount: 4,
-      departmentTarget: ['AIDS', 'CSE'],
-      description: 'Frontier AI engineering, distributed neural kernels, and multimodal model infrastructure.',
-      selectionStages: [
-        'Application Screening',
-        'Online Assessment',
-        'Technical Interview (Round 1)',
-        'Technical Interview (Round 2)',
-        'Final HR Evaluation',
-        'Offer Extended (Selected)',
-      ],
-    },
-    {
-      id: 'drive-2',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      packageLpa: '22 - 26 LPA',
-      location: 'Chennai / Remote',
-      minCgpa: 8.0,
-      allowedBacklogs: 0,
-      deadline: '20 Oct 2026',
-      driveDate: '28 Oct 2026',
-      status: 'active',
-      eligibleCount: 88,
-      appliedCount: 52,
-      selectedCount: 8,
-      departmentTarget: ['AIDS', 'CSE', 'ECE'],
-      description: 'Engineering resilient consumer SaaS platforms and synchronized distributed operating systems.',
-      selectionStages: [
-        'Application Screening',
-        'Technical Assessment',
-        'Technical Interview (Round 1)',
-        'Technical Interview (Round 2)',
-        'Final HR Evaluation',
-        'Offer Extended (Selected)',
-      ],
-    },
-    {
-      id: 'drive-3',
-      company: 'Microsoft Azure Core',
-      role: 'Cloud Infrastructure Associate',
-      packageLpa: '20 - 24 LPA',
-      location: 'Hyderabad',
-      minCgpa: 7.5,
-      allowedBacklogs: 0,
-      deadline: '25 Oct 2026',
-      driveDate: '02 Nov 2026',
-      status: 'active',
-      eligibleCount: 195,
-      appliedCount: 110,
-      selectedCount: 12,
-      departmentTarget: ['AIDS', 'CSE', 'ECE', 'MECH'],
-      description: 'Hyper-scale cloud virtualization, distributed storage systems, and Linux performance tuning.',
-      selectionStages: [
-        'Application Screening',
-        'Online Assessment',
-        'Technical Interview (Round 1)',
-        'Final HR Evaluation',
-        'Offer Extended (Selected)',
-      ],
-    },
-  ]));
+  const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', []));
 
-  const [studentPlacementApplications, setStudentPlacementApplications] = useState(() => getStoredOrFallback('studentPlacementApplications', [
-    {
-      driveId: 'drive-2',
-      studentId: '2024-AIDS-042',
-      studentName: 'Aadhi Narayanan',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      appliedAt: '05 Oct 2026',
-      stage: 'Technical Interview (Round 1)',
-      status: 'active',
-    },
-    {
-      driveId: 'drive-1',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      company: 'Google DeepMind & Systems',
-      role: 'Research Software Engineer',
-      appliedAt: '02 Oct 2026',
-      stage: 'Final HR Evaluation',
-      status: 'active',
-    },
-    {
-      driveId: 'drive-2',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      appliedAt: '01 Oct 2026',
-      stage: 'Offer Extended (Selected)',
-      status: 'offer',
-    },
-    {
-      driveId: 'drive-3',
-      studentId: '2024-CSE-102',
-      studentName: 'Bhavana Patel',
-      company: 'Microsoft Azure Core',
-      role: 'Cloud Infrastructure Associate',
-      appliedAt: '04 Oct 2026',
-      stage: 'Shortlisted for Online Assessment',
-      status: 'active',
-    },
-    {
-      driveId: 'drive-2',
-      studentId: '2024-CSE-102',
-      studentName: 'Bhavana Patel',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      appliedAt: '03 Oct 2026',
-      stage: 'Offer Extended (Selected)',
-      status: 'offer',
-    },
-    {
-      driveId: 'drive-3',
-      studentId: '2024-AIDS-027',
-      studentName: 'Tanvi Saxena',
-      company: 'Microsoft Azure Core',
-      role: 'Cloud Infrastructure Associate',
-      appliedAt: '07 Oct 2026',
-      stage: 'Application Received & Screening',
-      status: 'active',
-    },
-  ]));
+  const [studentPlacementApplications, setStudentPlacementApplications] = useState(() => getStoredOrFallback('studentPlacementApplications', []));
 
-  const [placementInterviews, setPlacementInterviews] = useState(() => getStoredOrFallback('placementInterviews', [
-    {
-      id: 'int-1',
-      driveId: 'drive-2',
-      company: 'Tetravate Engineering Labs',
-      studentId: '2024-AIDS-042',
-      studentName: 'Aadhi Narayanan',
-      type: 'Interview',
-      stage: 'Technical Interview (Round 1)',
-      scheduledDate: '14 Oct 2026',
-      timeSlot: '10:00 AM – 11:00 AM',
-      venue: 'CDC Interview Suite 2',
-      panel: 'Dr. Priya Raman / Mr. S. Iyer (Tetravate Lead)',
-      status: 'scheduled',
-      scoreOrNotes: 'Pending candidate evaluation',
-    },
-    {
-      id: 'int-2',
-      driveId: 'drive-1',
-      company: 'Google DeepMind & Systems',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      type: 'Interview',
-      stage: 'Final HR Evaluation',
-      scheduledDate: '12 Oct 2026',
-      timeSlot: '02:00 PM – 03:00 PM',
-      venue: 'Executive Boardroom B',
-      panel: 'Rohan Deshmukh (Google APAC Recruiter)',
-      status: 'scheduled',
-      scoreOrNotes: 'Round 2 Technical cleared with 98/100',
-    },
-    {
-      id: 'int-3',
-      driveId: 'drive-3',
-      company: 'Microsoft Azure Core',
-      studentId: '2024-CSE-102',
-      studentName: 'Bhavana Patel',
-      type: 'Assessment',
-      stage: 'Online Assessment',
-      scheduledDate: '11 Oct 2026',
-      timeSlot: '09:30 AM – 11:30 AM',
-      venue: 'Computing Lab 3 (Block B)',
-      panel: 'Microsoft University Proctoring Team',
-      status: 'completed',
-      scoreOrNotes: 'Score: 92/100 · Shortlisted for Technical Interview',
-    },
-    {
-      id: 'int-4',
-      driveId: 'drive-2',
-      company: 'Tetravate Engineering Labs',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      type: 'Interview',
-      stage: 'Final HR Evaluation',
-      scheduledDate: '05 Oct 2026',
-      timeSlot: '04:00 PM – 04:30 PM',
-      venue: 'CDC Suite 1',
-      panel: 'Meera Krishnan (Tetravate HR)',
-      status: 'selected',
-      scoreOrNotes: 'Cleared all technical & culture rounds. Recommended for offer.',
-    },
-  ]));
+  const [placementInterviews, setPlacementInterviews] = useState(() => getStoredOrFallback('placementInterviews', []));
 
-  const [placementOffers, setPlacementOffers] = useState(() => getStoredOrFallback('placementOffers', [
-    {
-      id: 'off-1',
-      driveId: 'drive-2',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      deptCode: 'AIDS',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      packageLpa: '24 LPA',
-      offerDate: '06 Oct 2026',
-      joiningDate: '01 Jul 2027',
-      offerStatus: 'accepted',
-      placementStatus: 'placed',
-      letterUrl: 'NIVARA-OFFER-2026-TEL-088.pdf',
-    },
-    {
-      id: 'off-2',
-      driveId: 'drive-2',
-      studentId: '2024-CSE-102',
-      studentName: 'Bhavana Patel',
-      deptCode: 'CSE',
-      company: 'Tetravate Engineering Labs',
-      role: 'Product Systems Architect',
-      packageLpa: '22 LPA',
-      offerDate: '07 Oct 2026',
-      joiningDate: '15 Jul 2027',
-      offerStatus: 'extended',
-      placementStatus: 'pending_acceptance',
-      letterUrl: 'NIVARA-OFFER-2026-TEL-092.pdf',
-    },
-  ]));
+  const [placementOffers, setPlacementOffers] = useState(() => getStoredOrFallback('placementOffers', []));
 
-  // 9. Leave Requests (Student -> Faculty / HOD -> Attendance)
-  const [leaveRequests, setLeaveRequests] = useState(() => getStoredOrFallback('leaveRequests', [
-    {
-      id: 'leave-1',
-      studentId: '2024-AIDS-042',
-      studentName: 'Aadhi Narayanan',
-      department: 'AI & Data Science',
-      reason: 'Representing University at Inter-Collegiate AI Hackathon in Bangalore',
-      startDate: '11 Oct 2026',
-      endDate: '12 Oct 2026',
-      days: 2,
-      status: 'approved',
-      approvedBy: 'Dr. K. Mohan (HOD)',
-      dutyAttendanceGranted: true,
-    },
-    {
-      id: 'leave-2',
-      studentId: '2024-AIDS-014',
-      studentName: 'Kavin Venkatesh',
-      department: 'AI & Data Science',
-      reason: 'Medical Leave - Viral fever under physician care',
-      startDate: '08 Oct 2026',
-      endDate: '09 Oct 2026',
-      days: 2,
-      status: 'pending',
-      approvedBy: null,
-      dutyAttendanceGranted: false,
-    },
-  ]));
+  // 9. Leave Requests
+  const [leaveRequests, setLeaveRequests] = useState(() => getStoredOrFallback('leaveRequests', []));
 
   // 10. Audit Activity Trail
-  const [auditLogs, setAuditLogs] = useState(() => getStoredOrFallback('auditLogs', [
-    {
-      id: 'log-1',
-      timestamp: 'Today · 09:30 AM',
-      actorRole: 'Faculty',
-      actorName: 'Dr. Priya Raman',
-      action: 'Recorded Lecture Attendance',
-      details: 'Data Structures CS301 (25 Present, 3 Absent) — Synced to Student & HOD dashboards.',
-    },
-    {
-      id: 'log-2',
-      timestamp: 'Yesterday · 04:15 PM',
-      actorRole: 'Placement Officer',
-      actorName: 'Dr. S. Kapoor',
-      action: 'Published Placement Drive',
-      details: 'Google DeepMind & Systems drive opened for 42 eligible AIDS/CSE students.',
-    },
-    {
-      id: 'log-3',
-      timestamp: '05 Oct 2026 · 11:20 AM',
-      actorRole: 'HOD',
-      actorName: 'Dr. K. Mohan',
-      action: 'Approved Duty Leave',
-      details: 'Approved 2 days On-Duty leave for Aadhi Narayanan (Hackathon delegation).',
-    },
-    {
-      id: 'log-4',
-      timestamp: '04 Oct 2026 · 02:45 PM',
-      actorRole: 'Finance',
-      actorName: 'Mrs. S. Mythili',
-      action: 'Verified Student Fee Receipts',
-      details: 'Reconciled 142 tuition fee transactions for Autumn 2026.',
-    },
-  ]));
+  const [auditLogs, setAuditLogs] = useState(() => getStoredOrFallback('auditLogs', []));
 
   // 11. Cross-Role Shared Notifications
-  const [notifications, setNotifications] = useState(() => getStoredOrFallback('notifications', [
-    {
-      id: 'notif-1',
-      recipientRole: 'student',
-      title: 'C++ Assignment Due Tomorrow',
-      message: 'Dr. Priya Raman: Graph Traversal implementation due at 11:59 PM.',
-      timeAgo: '2 hours ago',
-      unread: true,
-      tier: 'urgent',
-      actionTab: 'assignments',
-    },
-    {
-      id: 'notif-2',
-      recipientRole: 'student',
-      title: 'Fee Payment Reminder',
-      message: 'Finance Office: Semester 5 dues (₹45,000) are due by 15 Oct.',
-      timeAgo: '5 hours ago',
-      unread: true,
-      tier: 'important',
-      actionTab: 'fees',
-    },
-    {
-      id: 'notif-3',
-      recipientRole: 'hod',
-      title: 'New Student Leave Request',
-      message: 'Kavin Venkatesh (AIDS) submitted medical leave awaiting approval.',
-      timeAgo: '1 hour ago',
-      unread: true,
-      tier: 'important',
-      actionTab: 'leaves',
-    },
-    {
-      id: 'notif-4',
-      recipientRole: 'principal',
-      title: 'Room Collision Resolved',
-      message: 'Timetable Cell reallocated Hall B204 for Thursday lecture.',
-      timeAgo: '3 hours ago',
-      unread: false,
-      tier: 'updates',
-      actionTab: 'departments',
-    },
-  ]));
+  const [notifications, setNotifications] = useState(() => getStoredOrFallback('notifications', []));
 
   // 12. Faculty Workload & Department Staff
-  const [facultyMembers, setFacultyMembers] = useState(() => getStoredOrFallback('facultyMembers', [
-    {
-      id: 'fac-1',
-      name: 'Dr. Priya Raman',
-      dept: 'AI & Data Science',
-      designation: 'Associate Professor',
-      workloadHours: 16,
-      maxHours: 18,
-      courses: ['CS301 (Data Structures)', 'AI302 (ML Lab)'],
-      rating: 4.8,
-      compliancePct: 98,
-    },
-    {
-      id: 'fac-2',
-      name: 'Dr. K. Mohan',
-      dept: 'AI & Data Science',
-      designation: 'Professor & HOD',
-      workloadHours: 12,
-      maxHours: 14,
-      courses: ['CS304 (Database Systems)'],
-      rating: 4.9,
-      compliancePct: 100,
-    },
-    {
-      id: 'fac-3',
-      name: 'Prof. Ananya Sen',
-      dept: 'AI & Data Science',
-      designation: 'Assistant Professor',
-      workloadHours: 18,
-      maxHours: 18,
-      courses: ['CS302 (OOP Java)'],
-      rating: 4.6,
-      compliancePct: 94,
-    },
-    {
-      id: 'fac-4',
-      name: 'Prof. S. Venkatesh',
-      dept: 'AI & Data Science',
-      designation: 'Assistant Professor (Math)',
-      workloadHours: 16,
-      maxHours: 18,
-      courses: ['MA301 (Discrete Math)'],
-      rating: 4.7,
-      compliancePct: 96,
-    },
-  ]));
+  const [facultyMembers, setFacultyMembers] = useState(() => getStoredOrFallback('facultyMembers', []));
 
-  // 13. System Users (for Admin RBAC)
-  const [systemUsers, setSystemUsers] = useState(() => getStoredOrFallback('systemUsers', [
-    { id: 'usr-1', name: 'Aadhi Narayanan', email: 'aadhi.narayanan@nivara.edu', role: 'student', dept: 'AI & Data Science', status: 'active' },
-    { id: 'usr-2', name: 'Dr. Priya Raman', email: 'priya.raman@nivara.edu', role: 'faculty', dept: 'AI & Data Science', status: 'active' },
-    { id: 'usr-3', name: 'Dr. K. Mohan', email: 'k.mohan@nivara.edu', role: 'hod', dept: 'AI & Data Science', status: 'active' },
-    { id: 'usr-4', name: 'Dr. Aris Thorne', email: 'principal@nivara.edu', role: 'principal', dept: 'Executive Council', status: 'active' },
-    { id: 'usr-5', name: 'Admin Operations', email: 'admin.erp@nivara.edu', role: 'admin', dept: 'Campus Information Systems', status: 'active' },
-    { id: 'usr-6', name: 'Prof. V. Ramanathan', email: 'exam.controller@nivara.edu', role: 'exam_cell', dept: 'Academic Evaluation Office', status: 'active' },
-    { id: 'usr-7', name: 'Mrs. S. Mythili', email: 'bursar.finance@nivara.edu', role: 'finance', dept: 'Office of the Bursar', status: 'active' },
-    { id: 'usr-8', name: 'Dr. S. Kapoor', email: 'placement.cell@nivara.edu', role: 'placement', dept: 'Career Development Center', status: 'active' },
-    { id: 'usr-9', name: 'Kavin Venkatesh', email: 'kavin.v@nivara.edu', role: 'student', dept: 'AI & Data Science', status: 'active' },
-    { id: 'usr-10', name: 'Tanvi Saxena', email: 'tanvi.s@nivara.edu', role: 'student', dept: 'AI & Data Science', status: 'active' },
-  ]));
+  // 13. System Users
+  const [systemUsers, setSystemUsers] = useState(() => getStoredOrFallback('systemUsers', []));
 
-  // 14. Room Conflicts (for Admin)
-  const [roomConflicts, setRoomConflicts] = useState(() => getStoredOrFallback('roomConflicts', [
-    {
-      id: 'conf-1',
-      title: 'Classroom Double-Booking Collision',
-      detail: 'Room B204 is booked by both AI Lab (AIDS) and ECE Seminar on Thursday 11:30 AM.',
-      severity: 'urgent',
-      venue: 'Room B204',
-      timeSlot: 'Thursday 11:30 AM',
-    },
-    {
-      id: 'conf-2',
-      title: 'Elective Course Capacity Cap Reached',
-      detail: 'Cloud Architecture CS308 has 65 registrations against 60 maximum seat capacity.',
-      severity: 'important',
-      venue: 'Lecture Hall 4',
-      timeSlot: 'Friday 02:00 PM',
-    },
-  ]));
+  // 14. Room Conflicts
+  const [roomConflicts, setRoomConflicts] = useState(() => getStoredOrFallback('roomConflicts', []));
 
   // 15. Study Materials
-  const [studyMaterials, setStudyMaterials] = useState(() => getStoredOrFallback('studyMaterials', [
-    {
-      id: 'mat-1',
-      title: 'Lecture Slides: Graph Algorithms & Minimum Spanning Trees',
-      courseCode: 'CS301',
-      courseName: 'Data Structures & Algorithms',
-      uploadedBy: 'Dr. Priya Raman',
-      uploadedAt: '03 Oct 2026',
-      fileType: 'PDF Document (4.2 MB)',
-      downloads: 48,
-    },
-    {
-      id: 'mat-2',
-      title: 'B+ Tree Indexing Query Optimization Cheatsheet',
-      courseCode: 'CS304',
-      courseName: 'Database Management Systems',
-      uploadedBy: 'Dr. K. Mohan',
-      uploadedAt: '01 Oct 2026',
-      fileType: 'Markdown & SQL Samples (1.8 MB)',
-      downloads: 36,
-    },
-    {
-      id: 'mat-3',
-      title: 'Recurrence Relations & Master Theorem Practice Set',
-      courseCode: 'MA301',
-      courseName: 'Discrete Structures',
-      uploadedBy: 'Prof. S. Venkatesh',
-      uploadedAt: '28 Sep 2026',
-      fileType: 'Problem Set PDF (2.1 MB)',
-      downloads: 41,
-    },
-  ]));
+  const [studyMaterials, setStudyMaterials] = useState(() => getStoredOrFallback('studyMaterials', []));
 
-  // 16. System Settings
+  // 16. System Settings (Standard institutional configuration)
   const [systemSettings, setSystemSettings] = useState(() => getStoredOrFallback('systemSettings', {
     minAttendanceCutoff: 75,
     academicTerm: 'Autumn Semester 2026',
@@ -1341,235 +455,128 @@ export function NivaraProvider({ children }) {
   }));
 
   // 17. Unified Multi-Role Timetable Entries
-  const [timetableEntries, setTimetableEntries] = useState(() => getStoredOrFallback('timetableEntries', [
-    {
-      id: 'tt-1',
-      courseCode: 'CS301',
-      subjectName: 'Data Structures & Algorithms',
-      facultyName: 'Dr. Priya Raman',
-      sectionCode: 'AIDS-A-SEM5',
-      deptCode: 'AIDS',
-      dayOfWeek: 'Monday',
-      timeSlot: '08:30 AM – 10:00 AM',
-      startTime: '08:30:00',
-      endTime: '10:00:00',
-      room: 'Room A204',
-      isLab: false,
-    },
-    {
-      id: 'tt-2',
-      courseCode: 'AI302',
-      subjectName: 'Machine Learning Foundations Lab',
-      facultyName: 'Dr. Rajesh K.',
-      sectionCode: 'AIDS-A-SEM5',
-      deptCode: 'AIDS',
-      dayOfWeek: 'Monday',
-      timeSlot: '10:15 AM – 12:45 PM',
-      startTime: '10:15:00',
-      endTime: '12:45:00',
-      room: 'AI Computing Lab 1',
-      isLab: true,
-    },
-    {
-      id: 'tt-3',
-      courseCode: 'MA301',
-      subjectName: 'Discrete Mathematics & Graph Theory',
-      facultyName: 'Prof. S. Venkatesh',
-      sectionCode: 'AIDS-A-SEM5',
-      deptCode: 'AIDS',
-      dayOfWeek: 'Tuesday',
-      timeSlot: '09:00 AM – 10:30 AM',
-      startTime: '09:00:00',
-      endTime: '10:30:00',
-      room: 'Room A204',
-      isLab: false,
-    },
-    {
-      id: 'tt-4',
-      courseCode: 'CS304',
-      subjectName: 'Database Management Systems',
-      facultyName: 'Dr. K. Mohan',
-      sectionCode: 'AIDS-A-SEM5',
-      deptCode: 'AIDS',
-      dayOfWeek: 'Tuesday',
-      timeSlot: '11:00 AM – 12:30 PM',
-      startTime: '11:00:00',
-      endTime: '12:30:00',
-      room: 'Room B102',
-      isLab: false,
-    },
-    {
-      id: 'tt-5',
-      courseCode: 'CS302',
-      subjectName: 'Object Oriented Programming with Java',
-      facultyName: 'Prof. Ananya Sen',
-      sectionCode: 'AIDS-A-SEM5',
-      deptCode: 'AIDS',
-      dayOfWeek: 'Wednesday',
-      timeSlot: '08:30 AM – 10:00 AM',
-      startTime: '08:30:00',
-      endTime: '10:00:00',
-      room: 'Room A204',
-      isLab: false,
-    },
-  ]));
+  const [timetableEntries, setTimetableEntries] = useState(() => getStoredOrFallback('timetableEntries', []));
 
   // 18. Extended Course Materials
-  const [courseMaterials, setCourseMaterials] = useState(() => getStoredOrFallback('courseMaterials', [
-    {
-      id: 'mat-1',
-      courseCode: 'CS301',
-      subjectName: 'Data Structures & Algorithms',
-      title: 'Lecture Slides: Graph Algorithms & Minimum Spanning Trees',
-      description: 'Complete slide deck on Prim, Kruskal, and Dijkstra complexity proofs.',
-      facultyName: 'Dr. Priya Raman',
-      materialType: 'lecture_notes',
-      fileName: 'cs301_graphs_mst.pdf',
-      fileUrl: 'https://nivara-storage.local/courseware/cs301_graphs_mst.pdf',
-      fileSizeKb: 4200,
-      visibility: 'enrolled_class',
-      sectionCode: 'AIDS-A-SEM5',
-      uploadedAt: '03 Oct 2026',
-      downloads: 48,
-    },
-    {
-      id: 'mat-2',
-      courseCode: 'CS304',
-      subjectName: 'Database Management Systems',
-      title: 'B+ Tree Indexing Query Optimization Cheatsheet',
-      description: 'Composite indexing heuristics and PostgreSQL EXPLAIN ANALYZE walkthrough.',
-      facultyName: 'Dr. K. Mohan',
-      materialType: 'cheatsheet',
-      fileName: 'cs304_bplus_trees.pdf',
-      fileUrl: 'https://nivara-storage.local/courseware/cs304_bplus_trees.pdf',
-      fileSizeKb: 1800,
-      visibility: 'enrolled_class',
-      sectionCode: 'AIDS-A-SEM5',
-      uploadedAt: '01 Oct 2026',
-      downloads: 36,
-    },
-    {
-      id: 'mat-3',
-      courseCode: 'MA301',
-      subjectName: 'Discrete Mathematics',
-      title: 'Recurrence Relations & Master Theorem Practice Set',
-      description: 'Homework and practice problem set with worked solutions for divide-and-conquer recurrences.',
-      facultyName: 'Prof. S. Venkatesh',
-      materialType: 'problem_set',
-      fileName: 'ma301_recurrence_set.pdf',
-      fileUrl: 'https://nivara-storage.local/courseware/ma301_recurrence_set.pdf',
-      fileSizeKb: 2100,
-      visibility: 'department',
-      sectionCode: 'AIDS-A-SEM5',
-      uploadedAt: '28 Sep 2026',
-      downloads: 41,
-    },
-  ]));
+  const [courseMaterials, setCourseMaterials] = useState(() => getStoredOrFallback('courseMaterials', []));
 
   // 19. Examination Revaluation Pipeline
-  const [revaluationRequests, setRevaluationRequests] = useState(() => getStoredOrFallback('revaluationRequests', [
-    {
-      id: 'rev-1',
-      studentId: '2024-AIDS-042',
-      rollNo: '22AIDS042',
-      studentName: 'Aadhi Narayanan',
-      courseCode: 'CS302',
-      subjectName: 'Object Oriented Programming',
-      semester: 4,
-      originalGrade: 'B+',
-      originalMarks: 72,
-      reason: 'Discrepancy in Question 4b recursion trace valuation; request re-totaling and reassessment of Part B answer script.',
-      status: 'under_review',
-      updatedMarks: null,
-      updatedGrade: null,
-      reviewedBy: 'Prof. V. Ramanathan',
-      submittedAt: '02 Oct 2026',
-    },
-    {
-      id: 'rev-2',
-      studentId: '2024-AIDS-014',
-      rollNo: '22AIDS014',
-      studentName: 'Kavin Venkatesh',
-      courseCode: 'MA301',
-      subjectName: 'Discrete Mathematics',
-      semester: 4,
-      originalGrade: 'C',
-      originalMarks: 58,
-      reason: 'Part A Question 2 graph theory theorem statement was penalized despite citing correct standard lemma.',
-      status: 'submitted',
-      updatedMarks: null,
-      updatedGrade: null,
-      reviewedBy: null,
-      submittedAt: '05 Oct 2026',
-    },
-  ]));
+  const [revaluationRequests, setRevaluationRequests] = useState(() => getStoredOrFallback('revaluationRequests', []));
 
   // 20. Scholarships & Fee Concessions
-  const [feeConcessions, setFeeConcessions] = useState(() => getStoredOrFallback('feeConcessions', [
-    {
-      id: 'conc-1',
-      studentId: '2024-AIDS-003',
-      studentName: 'Arun Kumar',
-      category: 'Merit Academic Dean Scholarship (Top 1% Department Rank)',
-      amount: 25000,
-      status: 'sanctioned',
-      sanctionedBy: 'Mrs. S. Mythili (Accounts Bursar)',
-      academicYear: '2026-2027',
-    },
-    {
-      id: 'conc-2',
-      studentId: '2024-AIDS-042',
-      studentName: 'Aadhi Narayanan',
-      category: 'State Sports & Technical Hackathon Excellence Concession',
-      amount: 10000,
-      status: 'sanctioned',
-      sanctionedBy: 'Dr. Aris Thorne (Principal)',
-      academicYear: '2026-2027',
-    },
-  ]));
+  const [feeConcessions, setFeeConcessions] = useState(() => getStoredOrFallback('feeConcessions', []));
 
   // 21. Multi-Tier Announcements
-  const [announcements, setAnnouncements] = useState(() => getStoredOrFallback('announcements', [
-    {
-      id: 'anc-1',
-      title: 'Autonomous Mid-Semester Examination Schedule Published',
-      content: 'Autonomous Mid-Semester II schedules for all 3rd Year B.Tech cohorts are verified and uploaded to student portals.',
-      scope: 'institutional',
-      targetDept: 'ALL',
-      targetSection: 'ALL',
-      targetRole: 'ALL',
-      priority: 'high',
-      publishedBy: 'Prof. V. Ramanathan',
-      publishedRole: 'exam_cell',
-      publishedAt: 'Today · 09:15 AM',
-    },
-    {
-      id: 'anc-2',
-      title: 'Autumn 2026 Tuition Fee Settlement Grace Window',
-      content: 'Students with pending Semester 5 dues are advised to complete online reconciliation before 15 October 2026 to avoid hall ticket holds.',
-      scope: 'institutional',
-      targetDept: 'ALL',
-      targetSection: 'ALL',
-      targetRole: 'student',
-      priority: 'high',
-      publishedBy: 'Mrs. S. Mythili',
-      publishedRole: 'finance',
-      publishedAt: 'Yesterday · 04:30 PM',
-    },
-    {
-      id: 'anc-3',
-      title: 'Campus Recruitment Drive: Google DeepMind & Systems',
-      content: 'Eligible 3rd and 4th Year AIDS and CSE students (CGPA >= 8.5, 0 backlogs) can register on the placement portal by 16 October.',
-      scope: 'department',
-      targetDept: 'AIDS',
-      targetSection: 'ALL',
-      targetRole: 'student',
-      priority: 'high',
-      publishedBy: 'Dr. S. Kapoor',
-      publishedRole: 'placement',
-      publishedAt: '05 Oct 2026 · 11:00 AM',
-    },
-  ]));
+  const [announcements, setAnnouncements] = useState(() => getStoredOrFallback('announcements', []));
+
+  // -------------------------------------------------------------
+  // SUPABASE AS PRIMARY PRODUCTION SOURCE OF TRUTH
+  // Hydrates live records asynchronously into state when Supabase is configured.
+  // Genuine empty tables ([]) correctly produce empty state in the UI.
+  // -------------------------------------------------------------
+  const [isDataLoading, setIsDataLoading] = useState(isSupabaseConfigured);
+  const [dataFetchError, setDataFetchError] = useState(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    let isMounted = true;
+    async function hydrateFromSupabase() {
+      try {
+        setIsDataLoading(true);
+        setDataFetchError(null);
+
+        const [
+          studentsRes,
+          departmentsRes,
+          assignmentsRes,
+          marksRes,
+          examsRes,
+          resultsRes,
+          feesRes,
+          paymentsRes,
+          refundsRes,
+          concessionsRes,
+          leavesRes,
+          companiesRes,
+          drivesRes,
+          appsRes,
+          interviewsRes,
+          offersRes,
+          timetableRes,
+          materialsRes,
+          revalRes,
+          announcementsRes,
+          auditRes,
+          notifsRes,
+        ] = await Promise.all([
+          dataService.getStudents([]),
+          dataService.getDepartments([]),
+          dataService.getAssignments([]),
+          dataService.getInternalMarks([]),
+          dataService.getExamSessions([]),
+          dataService.getPublishedResults(null),
+          dataService.getFeeStructures([]),
+          dataService.getPayments([]),
+          dataService.getRefundRequests([]),
+          dataService.getFeeConcessions([]),
+          dataService.getLeaveRequests([]),
+          dataService.getCompanies([]),
+          dataService.getPlacementDrives([]),
+          dataService.getPlacementApplications([]),
+          dataService.getPlacementInterviews([]),
+          dataService.getPlacementOffers([]),
+          dataService.getTimetableEntries([]),
+          dataService.getCourseMaterials([]),
+          dataService.getRevaluationRequests([]),
+          dataService.getAnnouncements([]),
+          dataService.getAuditLogs([]),
+          dataService.getNotifications([]),
+        ]);
+
+        if (!isMounted) return;
+
+        // When Supabase query succeeds, assign remote records (including empty arrays)
+        if (studentsRes.success && studentsRes.data !== null) setStudents(studentsRes.data);
+        if (departmentsRes.success && departmentsRes.data !== null) setDepartments(departmentsRes.data);
+        if (assignmentsRes.success && assignmentsRes.data !== null) setAssignments(assignmentsRes.data);
+        if (marksRes.success && marksRes.data !== null) setInternalMarks(marksRes.data);
+        if (examsRes.success && examsRes.data !== null) setExamSessions(examsRes.data);
+        if (resultsRes.success && resultsRes.data !== null) setPublishedResults(resultsRes.data);
+        if (feesRes.success && feesRes.data !== null) setFeeStructures(feesRes.data);
+        if (paymentsRes.success && paymentsRes.data !== null) setPaymentHistory(paymentsRes.data);
+        if (refundsRes.success && refundsRes.data !== null) setRefundRequests(refundsRes.data);
+        if (concessionsRes.success && concessionsRes.data !== null) setFeeConcessions(concessionsRes.data);
+        if (leavesRes.success && leavesRes.data !== null) setLeaveRequests(leavesRes.data);
+        if (companiesRes.success && companiesRes.data !== null) setCompanies(companiesRes.data);
+        if (drivesRes.success && drivesRes.data !== null) setPlacementDrives(drivesRes.data);
+        if (appsRes.success && appsRes.data !== null) setStudentPlacementApplications(appsRes.data);
+        if (interviewsRes.success && interviewsRes.data !== null) setPlacementInterviews(interviewsRes.data);
+        if (offersRes.success && offersRes.data !== null) setPlacementOffers(offersRes.data);
+        if (timetableRes.success && timetableRes.data !== null) setTimetableEntries(timetableRes.data);
+        if (materialsRes.success && materialsRes.data !== null) setCourseMaterials(materialsRes.data);
+        if (revalRes.success && revalRes.data !== null) setRevaluationRequests(revalRes.data);
+        if (announcementsRes.success && announcementsRes.data !== null) setAnnouncements(announcementsRes.data);
+        if (auditRes.success && auditRes.data !== null) setAuditLogs(auditRes.data);
+        if (notifsRes.success && notifsRes.data !== null) setNotifications(notifsRes.data);
+
+        const errorItem = [studentsRes, departmentsRes, assignmentsRes, feesRes].find((r) => !r.success);
+        if (errorItem) {
+          setDataFetchError(errorItem.error);
+        }
+      } catch (err) {
+        console.error('Failed to hydrate state from Supabase:', err);
+        if (isMounted) setDataFetchError(err.message || 'Error connecting to database');
+      } finally {
+        if (isMounted) setIsDataLoading(false);
+      }
+    }
+
+    hydrateFromSupabase();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // -------------------------------------------------------------
   // REAL-TIME MULTI-TAB / CONCURRENT SESSION SYNCHRONIZATION
@@ -1767,11 +774,14 @@ export function NivaraProvider({ children }) {
     const sessionPct = Math.round((presentCount / totalCount) * 100);
 
     // 1. Update course record with robust matcher
+    const activeStudentId = currentUser?.studentId || currentUser?.id;
     const updatedCourses = coursesAttendance.map((c) => {
       if (c.code === courseCode || courseCode.includes(c.code) || c.name.includes(courseCode)) {
         const updatedTotal = c.total + 1;
-        const aadhiPresent = newRoster.find((s) => s.id === '2024-AIDS-042' || s.roll === '22AIDS042')?.status === 'present';
-        const updatedAttended = aadhiPresent ? c.attended + 1 : c.attended;
+        const currentStudentPresent = activeStudentId
+          ? newRoster.find((s) => s.id === activeStudentId || s.roll === activeStudentId)?.status === 'present'
+          : false;
+        const updatedAttended = currentStudentPresent ? c.attended + 1 : c.attended;
         const updatedPct = Math.round((updatedAttended / updatedTotal) * 100);
         const safeToMiss = Math.max(0, Math.floor((updatedAttended - 0.75 * updatedTotal) / 0.75));
         return {
@@ -1819,7 +829,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Faculty',
-      actorName: 'Dr. Priya Raman',
+      actorName: currentUser?.userName || 'Faculty',
       action: `Marked Attendance for ${courseCode}`,
       details: `${presentCount} Present, ${absentCount} Absent. Synced across Student, HOD & Principal portals.`,
     };
@@ -1835,7 +845,7 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
     });
 
-    dataService.recordAttendance(courseCode, newRoster, 'Dr. Priya Raman');
+    dataService.recordAttendance(courseCode, newRoster, currentUser?.userName || 'Faculty');
     showToast(`Attendance synchronized: ${presentCount} Present, ${absentCount} Absent ✓`, 'success');
   };
 
@@ -1852,8 +862,8 @@ export function NivaraProvider({ children }) {
       urgency: assignmentData.urgency || 'important',
       progress: 0,
       completed: false,
-      faculty: assignmentData.faculty || 'Dr. Priya Raman',
-      totalEnrolled: 28,
+      faculty: assignmentData.faculty || currentUser?.userName || 'Faculty',
+      totalEnrolled: (students || []).length,
       submittedCount: 0,
       gradedCount: 0,
       weightage: assignmentData.weightage || '10% of Internal Mark',
@@ -1882,7 +892,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Faculty',
-      actorName: 'Dr. Priya Raman',
+      actorName: currentUser?.userName || 'Faculty',
       action: 'Created New Assignment',
       details: `Published "${newAssignment.title}" for ${newAssignment.courseCode}.`,
     };
@@ -1899,8 +909,8 @@ export function NivaraProvider({ children }) {
   };
 
   const submitStudentAssignment = (assignmentId, notes = '') => {
-    const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
-    const activeStudentName = currentUser?.userName || 'Aadhi Narayanan';
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+    const activeStudentName = currentUser?.userName || currentUser?.name || 'Student';
     const updatedAssignments = assignments.map((a) => {
       if (a.id === assignmentId) {
         const alreadySubmitted = (a.submissions || []).some((s) => s.studentId === activeStudentId);
@@ -1955,6 +965,8 @@ export function NivaraProvider({ children }) {
   };
 
   const gradeStudentSubmission = (assignmentId, studentId, grade, feedback) => {
+    const currentStudentId = currentUser?.studentId || currentUser?.id;
+    const isCurrentStudent = Boolean(currentStudentId && studentId === currentStudentId);
     const updatedAssignments = assignments.map((a) => {
       if (a.id === assignmentId) {
         const updatedSubmissions = a.submissions.map((sub) => {
@@ -1967,8 +979,8 @@ export function NivaraProvider({ children }) {
         return {
           ...a,
           gradedCount,
-          grade: studentId === '2024-AIDS-042' ? grade : a.grade,
-          feedback: studentId === '2024-AIDS-042' ? feedback : a.feedback,
+          grade: isCurrentStudent ? grade : a.grade,
+          feedback: isCurrentStudent ? feedback : a.feedback,
           submissions: updatedSubmissions,
         };
       }
@@ -1994,7 +1006,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Faculty',
-      actorName: 'Dr. Priya Raman',
+      actorName: currentUser?.userName || 'Faculty',
       action: 'Graded Assignment Submission',
       details: `Graded submission for student ${studentId} with ${grade}.`,
     };
@@ -2035,14 +1047,14 @@ export function NivaraProvider({ children }) {
 
   // WORKFLOW 3: LEAVE REQUEST & HOD ATTENDANCE CONCESSION
   const submitLeaveRequest = (leaveData) => {
-    const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
-    const activeStudentName = currentUser?.userName || 'Aadhi Narayanan';
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+    const activeStudentName = currentUser?.userName || currentUser?.name || 'Student';
     const newId = `leave-${Date.now()}`;
     const newLeave = {
       id: newId,
       studentId: activeStudentId,
       studentName: activeStudentName,
-      department: currentUser?.dept || 'AI & Data Science',
+      department: currentUser?.dept || currentUser?.department || '',
       reason: leaveData.reason,
       startDate: leaveData.startDate,
       endDate: leaveData.endDate,
@@ -2085,7 +1097,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Student',
-      actorName: 'Aadhi Narayanan',
+      actorName: activeStudentName || 'Student',
       action: 'Submitted Duty Leave Request',
       details: `Requested ${newLeave.days} day(s) leave (${newLeave.startDate} – ${newLeave.endDate}) for ${newLeave.reason}.`,
     };
@@ -2108,7 +1120,7 @@ export function NivaraProvider({ children }) {
         ? {
             ...l,
             status: approved ? 'approved' : 'rejected',
-            approvedBy: 'Dr. K. Mohan (HOD)',
+            approvedBy: currentUser?.userName ? `${currentUser.userName} (HOD)` : 'Head of Department',
             dutyAttendanceGranted: approved,
           }
         : l
@@ -2134,7 +1146,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'HOD',
-      actorName: 'Dr. K. Mohan',
+      actorName: currentUser?.userName || 'Head of Department',
       action: approved ? 'Approved Student Duty Leave' : 'Rejected Student Duty Leave',
       details: approved
         ? `Approved ${leave?.days || 2} days on-duty leave for ${leave?.studentName || 'Student'} with attendance concession.`
@@ -2173,18 +1185,18 @@ export function NivaraProvider({ children }) {
 
   // WORKFLOW 4: FEES & MULTI-STUDENT BURSARY RECONCILIATION
   const payStudentFee = (amount, targetStudentId, paymentMode = null, feeDescription = null, customReceiptId = null) => {
-    const effectiveStudentId = targetStudentId || currentUser?.studentId || '2024-AIDS-042';
-    const targetStudent = students.find((s) => s.id === effectiveStudentId) || students[0];
-    const studentName = targetStudent ? targetStudent.name : (currentUser?.userName || 'Aadhi Narayanan');
-    const feeAmt = Number(amount) || (targetStudent?.feePendingAmount || 45000);
+    const effectiveStudentId = targetStudentId || currentUser?.studentId || currentUser?.id || '';
+    const targetStudent = students.find((s) => s.id === effectiveStudentId);
+    const studentName = targetStudent ? targetStudent.name : (currentUser?.userName || currentUser?.name || 'Student');
+    const feeAmt = Number(amount) || (targetStudent?.feePendingAmount || 0);
 
     const receiptId = customReceiptId || `REC-${new Date().getFullYear()}-NIV-${Math.floor(1000 + Math.random() * 9000)}`;
-    const effectiveMode = paymentMode || (currentUser.role === 'finance' ? 'Bank Challan (Offline Verified)' : 'Online UPI / Card Gateway (Demo Verified)');
+    const effectiveMode = paymentMode || (currentUser?.role === 'finance' ? 'Bank Challan (Offline Verified)' : 'Online UPI / Card Gateway');
 
     // 1. Update Student record with strict mathematical balance deduction
     const updatedStudents = students.map((st) => {
       if (st.id === effectiveStudentId) {
-        const currentPending = st.feePendingAmount !== undefined ? st.feePendingAmount : 45000;
+        const currentPending = st.feePendingAmount !== undefined ? st.feePendingAmount : 0;
         const remaining = Math.max(0, currentPending - feeAmt);
         return {
           ...st,
@@ -2517,7 +1529,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Created Placement Drive',
       details: `Published recruitment drive for ${newDrive.company} (${newDrive.role}).`,
     };
@@ -2536,8 +1548,8 @@ export function NivaraProvider({ children }) {
   const applyPlacementDrive = (driveId) => {
     const drive = placementDrives.find((d) => d.id === driveId);
     if (!drive) return;
-    const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
-    const activeStudentName = currentUser?.userName || 'Aadhi Narayanan';
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+    const activeStudentName = currentUser?.userName || currentUser?.name || 'Student';
 
     const alreadyApplied = studentPlacementApplications.some((a) => a.driveId === driveId && a.studentId === activeStudentId);
     if (alreadyApplied) {
@@ -2628,7 +1640,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Advanced Candidate Stage',
       details: `Candidate stage updated to "${newStage}" for ${drive?.company || 'Drive'}.`,
     };
@@ -2655,7 +1667,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Updated Placement Drive',
       details: `Modified parameters for ${target?.company || 'Drive'} (${target?.role || 'Role'}).`,
     };
@@ -2689,7 +1701,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Registered Corporate Partner',
       details: `Added corporate entity: ${newCompany.name} (${newCompany.category}).`,
     };
@@ -2714,7 +1726,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Updated Company Dossier',
       details: `Updated information for partner company ${target?.name || id}.`,
     };
@@ -2773,7 +1785,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Scheduled Candidate Assessment',
       details: `Scheduled ${newInterview.stage} for ${newInterview.studentName} (${newInterview.company}).`,
     };
@@ -2832,7 +1844,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Recorded Interview Outcome',
       details: `${target.studentName} · ${target.stage} at ${target.company} marked as ${outcomeStatus}.`,
     };
@@ -2901,7 +1913,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Issued Placement Offer',
       details: `Extended offer to ${newOffer.studentName} for ${newOffer.role} at ${newOffer.company} (${newOffer.packageLpa}).`,
     };
@@ -2945,7 +1957,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Placement Officer',
-      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      actorName: currentUser?.userName || 'Placement Officer',
       action: 'Updated Offer Status',
       details: `${target.studentName} offer with ${target.company} marked as ${newOfferStatus} (Placement: ${newPlacementStatus}).`,
     };
@@ -3025,7 +2037,7 @@ export function NivaraProvider({ children }) {
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
       actorRole: 'Exam Cell',
-      actorName: 'Prof. V. Ramanathan',
+      actorName: currentUser?.userName || 'Controller of Examinations',
       action: 'Published Official Semester 4 Results',
       details: 'Moderated grade sheets released for all departments. Synced to Student & Principal records.',
     };
@@ -3338,27 +2350,27 @@ export function NivaraProvider({ children }) {
 
   // User Profile Updates
   const updateUserProfile = (profileData) => {
-    const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '';
     setStudents((prev) =>
-      prev.map((s) => (s.id === activeStudentId || s.email === currentUser?.email ? { ...s, ...profileData } : s))
+      prev.map((s) => ((activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser.email) ? { ...s, ...profileData } : s))
     );
     showToast('Profile credentials updated successfully ✓', 'success');
   };
 
   // Revaluation Workflow
   const submitRevaluationRequest = async (revalData) => {
-    const activeStudentId = currentUser?.studentId || currentUser?.id || '2024-AIDS-042';
-    const student = (students || []).find((s) => s.id === activeStudentId || s.email === currentUser?.email) || (students || [])[0] || {};
+    const activeStudentId = currentUser?.studentId || currentUser?.id || '';
+    const student = (students || []).find((s) => (activeStudentId && s.id === activeStudentId) || (currentUser?.email && s.email === currentUser?.email)) || {};
     const newReq = {
       id: `rev-${Date.now()}`,
       studentId: student.id || activeStudentId,
-      rollNo: student.rollNo || '22AIDS042',
-      studentName: student.name || currentUser?.userName || 'Aadhi Narayanan',
+      rollNo: student.rollNo || '',
+      studentName: student.name || currentUser?.userName || currentUser?.name || 'Student',
       courseCode: revalData.courseCode,
       subjectName: revalData.subjectName,
-      semester: Number(revalData.semester) || 4,
-      originalGrade: revalData.originalGrade || 'B',
-      originalMarks: Number(revalData.originalMarks) || 65,
+      semester: Number(revalData.semester) || 1,
+      originalGrade: revalData.originalGrade || '—',
+      originalMarks: Number(revalData.originalMarks) || 0,
       reason: revalData.reason,
       status: 'submitted',
       updatedMarks: null,
@@ -3461,13 +2473,13 @@ export function NivaraProvider({ children }) {
       subjectName: matData.subjectName || matData.courseCode,
       title: matData.title,
       description: matData.description || 'Uploaded course study resource',
-      facultyName: matData.facultyName || currentUser?.userName || 'Dr. Priya Raman',
+      facultyName: matData.facultyName || currentUser?.userName || 'Faculty',
       materialType: matData.materialType || 'lecture_notes',
       fileName: matData.fileName || 'course_document.pdf',
-      fileUrl: matData.fileUrl || 'https://nivara-storage.local/courseware/sample.pdf',
-      fileSizeKb: Number(matData.fileSizeKb) || 2400,
+      fileUrl: matData.fileUrl || '',
+      fileSizeKb: Number(matData.fileSizeKb) || 0,
       visibility: matData.visibility || 'enrolled_class',
-      sectionCode: matData.sectionCode || 'AIDS-A-SEM5',
+      sectionCode: matData.sectionCode || '',
       uploadedAt: 'Today',
       downloads: 0,
     };
@@ -3623,6 +2635,8 @@ export function NivaraProvider({ children }) {
         toggleTheme,
         isOffline,
         setIsOffline,
+        isDataLoading,
+        dataFetchError,
         activeTab,
         setActiveTab,
 

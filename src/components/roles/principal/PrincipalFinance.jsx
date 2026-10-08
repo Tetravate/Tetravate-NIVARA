@@ -24,7 +24,7 @@ export default function PrincipalFinance() {
   }, [feeStructures]);
 
   const totalOutstanding = totalBilled - totalCollected;
-  const realizationRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 87;
+  const realizationRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
 
   const totalPendingStudents = useMemo(() => {
     return (feeStructures || []).reduce((acc, f) => acc + (f.studentsPendingCount || 0), 0);

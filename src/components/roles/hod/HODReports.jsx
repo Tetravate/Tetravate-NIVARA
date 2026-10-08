@@ -18,6 +18,7 @@ export default function HODReports() {
   const {
     departments,
     students,
+    facultyMembers,
     showToast,
   } = useNivara();
 
@@ -26,11 +27,11 @@ export default function HODReports() {
   const dept = (departments || []).find((d) => d.code === 'AIDS') || {
     code: 'AIDS',
     name: 'Department of AI & Data Science',
-    studentCount: 380,
-    facultyCount: 14,
-    attendancePct: 84.8,
-    avgCgpa: 8.42,
-    placedPct: 82,
+    studentCount: (students || []).filter((s) => s.deptCode === 'AIDS' || s.department?.includes('AI & Data Science')).length,
+    facultyCount: (facultyMembers || []).filter((f) => f.deptCode === 'AIDS' || f.department?.includes('AI & Data Science')).length,
+    attendancePct: 0,
+    avgCgpa: 0,
+    placedPct: 0,
   };
 
   const [selectedReportType, setSelectedReportType] = useState('attendance');
@@ -47,8 +48,8 @@ export default function HODReports() {
     return deptStudents.filter((st) => {
       const matchesCohort =
         selectedCohort === 'all' ||
-        (selectedCohort === 'AIDS-A' && (st.section === 'A' || st.name.includes('Aswin') || st.name.includes('Pooja') || st.name.includes('Kavitha'))) ||
-        (selectedCohort === 'AIDS-B' && (st.section === 'B' || st.name.includes('Rahul') || st.name.includes('Siddharth') || st.name.includes('Divya')));
+        (selectedCohort === 'AIDS-A' && st.section === 'A') ||
+        (selectedCohort === 'AIDS-B' && st.section === 'B');
 
       const matchesStatus =
         selectedStatus === 'all' ||
@@ -74,9 +75,9 @@ export default function HODReports() {
         `"${s.name}"`,
         `"${s.section || 'Sec A'}"`,
         `"${s.attendancePct}%"`,
-        `"${s.totalClasses || 48}"`,
-        `"${s.attendedClasses || Math.round((48 * (s.attendancePct || 85)) / 100)}"`,
-        `"${(s.attendancePct || 85) < 75 ? 'Requires Medical Condonation' : 'Normal Standing'}"`,
+        `"${s.totalClasses || 0}"`,
+        `"${s.attendedClasses || 0}"`,
+        `"${(s.attendancePct || 0) < 75 ? 'Requires Medical Condonation' : 'Normal Standing'}"`,
       ]);
     } else if (selectedReportType === 'performance') {
       headers = ['Student ID', 'Full Name', 'Cohort', 'CGPA', 'Standing', 'Backlogs', 'CIA Status'];
@@ -84,10 +85,10 @@ export default function HODReports() {
         `"${s.id}"`,
         `"${s.name}"`,
         `"${s.section || 'Sec A'}"`,
-        `"${s.cgpa || 8.0}"`,
+        `"${s.cgpa || 0}"`,
         `"${s.standing || 'Good Standing'}"`,
         `"${s.backlogs || 0}"`,
-        `"${(s.cgpa || 8.0) >= 8.5 ? 'First Class Distinction' : 'Satisfactory'}"`,
+        `"${(s.cgpa || 0) >= 8.5 ? 'First Class Distinction' : (s.cgpa ? 'Satisfactory' : 'Pending')}"`,
       ]);
     } else if (selectedReportType === 'at_risk') {
       const riskList = filteredStudents.filter((s) => (s.attendancePct || 0) < 75 || (s.backlogs || 0) > 0);
@@ -98,25 +99,19 @@ export default function HODReports() {
         `"${s.attendancePct}%"`,
         `"${s.backlogs || 0}"`,
         `"${s.cgpa}"`,
-        `"${s.advisor || 'Dr. Priya Raman'}"`,
+        `"${s.advisor || 'Unassigned'}"`,
         `"Remedial Mentoring & Faculty Advisory Review"`,
       ]);
     } else if (selectedReportType === 'workload') {
       headers = ['Faculty Name', 'Designation', 'Assigned Courses', 'Sections Handled', 'Weekly Hours', 'UGC 18h Ceiling Compliance'];
-      const facultyList = [
-        { name: 'Dr. Priya Raman', role: 'Associate Professor', courses: 'Machine Learning (AI302)', sections: 'AIDS-A, AIDS-B', hours: 16 },
-        { name: 'Prof. Ananya Sen', role: 'Assistant Professor', courses: 'Database Management Systems (CS301)', sections: 'AIDS-A', hours: 14 },
-        { name: 'Prof. S. Venkatesh', role: 'Associate Professor', courses: 'Data Structures & Algorithms (CS304)', sections: 'AIDS-A, AIDS-B', hours: 18 },
-        { name: 'Dr. Rajesh K', role: 'Professor', courses: 'Probability & Statistics (MA301)', sections: 'AIDS-B', hours: 12 },
-        { name: 'Prof. M. Karthik', role: 'Assistant Professor', courses: 'Computer Networks (CS302)', sections: 'AIDS-A', hours: 14 },
-      ];
+      const facultyList = (facultyMembers || []).filter((f) => f.deptCode === 'AIDS' || f.department?.includes('AI & Data Science'));
       rows = facultyList.map((f) => [
         `"${f.name}"`,
-        `"${f.role}"`,
-        `"${f.courses}"`,
-        `"${f.sections}"`,
-        `"${f.hours} hrs"`,
-        `"${f.hours > 18 ? 'Exceeds Ceiling' : 'Compliant'}"`,
+        `"${f.designation || f.role || 'Faculty'}"`,
+        `"${f.course || f.subjects || 'Assigned Subjects'}"`,
+        `"${f.sections || 'Section A'}"`,
+        `"${f.workloadHours || 0} hrs"`,
+        `"${(f.workloadHours || 0) > 18 ? 'Exceeds Ceiling' : 'Compliant'}"`,
       ]);
     } else {
       // overview
@@ -473,7 +468,7 @@ export default function HODReports() {
                         </span>
                       </td>
                       <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: 'var(--state-urgent)' }}>{st.attendancePct}%</td>
-                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{st.advisor || 'Dr. Priya Raman'}</td>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{st.advisor || 'Not Assigned'}</td>
                       <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
                         Parent Counseling & Mandatory Tutorial Attendance
                       </td>
@@ -492,30 +487,37 @@ export default function HODReports() {
                   <th style={{ padding: '0.75rem 1rem' }}>Faculty Name</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Designation</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Assigned Courses</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Sections</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Department</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Teaching Hours</th>
                   <th style={{ padding: '0.75rem 1rem' }}>UGC 18h Ceiling Compliance</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { name: 'Dr. Priya Raman', role: 'Associate Professor', courses: 'Machine Learning (AI302)', sections: 'AIDS-A, AIDS-B', hours: 16 },
-                  { name: 'Prof. Ananya Sen', role: 'Assistant Professor', courses: 'Database Management Systems (CS301)', sections: 'AIDS-A', hours: 14 },
-                  { name: 'Prof. S. Venkatesh', role: 'Associate Professor', courses: 'Data Structures & Algorithms (CS304)', sections: 'AIDS-A, AIDS-B', hours: 18 },
-                  { name: 'Dr. Rajesh K', role: 'Professor', courses: 'Probability & Statistics (MA301)', sections: 'AIDS-B', hours: 12 },
-                  { name: 'Prof. M. Karthik', role: 'Assistant Professor', courses: 'Computer Networks (CS302)', sections: 'AIDS-A', hours: 14 },
-                ].map((f) => (
-                  <tr key={f.name} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{f.name}</td>
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{f.role}</td>
-                    <td style={{ padding: '0.75rem 1rem' }}>{f.courses}</td>
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{f.sections}</td>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{f.hours} hrs/wk</td>
-                    <td style={{ padding: '0.75rem 1rem' }}>
-                      <span className="badge badge-success">Compliant (≤ 18h)</span>
+                {(!facultyMembers || facultyMembers.length === 0) ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No faculty workload records available.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  (facultyMembers || []).map((f) => {
+                    const hours = f.teachingHours || (f.role === 'Professor' ? 12 : 16);
+                    return (
+                      <tr key={f.id || f.name} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{f.name}</td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{f.designation || f.role || 'Faculty'}</td>
+                        <td style={{ padding: '0.75rem 1rem' }}>{f.courses || f.course || f.specialization || 'Assigned Courses'}</td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{f.department || f.deptCode || 'AIDS'}</td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{hours} hrs/wk</td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <span className={`badge badge-${hours <= 18 ? 'success' : 'urgent'}`}>
+                            {hours <= 18 ? 'Compliant (≤ 18h)' : 'Overload Warning'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
