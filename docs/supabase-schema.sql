@@ -228,16 +228,35 @@ CREATE TABLE IF NOT EXISTS public.payments (
 );
 
 -- 12. PLACEMENT & RECRUITMENT
+CREATE TABLE IF NOT EXISTS public.companies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    category VARCHAR(128) NOT NULL,
+    website VARCHAR(255) DEFAULT '',
+    hr_contact VARCHAR(255) DEFAULT '',
+    hr_email VARCHAR(255) DEFAULT '',
+    hr_phone VARCHAR(64) DEFAULT '',
+    active_status VARCHAR(32) DEFAULT 'active' CHECK (active_status IN ('active', 'inactive', 'partner')),
+    notes TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.placement_drives (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company VARCHAR(255) NOT NULL,
+    company_id UUID REFERENCES public.companies(id) ON DELETE SET NULL,
     role VARCHAR(255) NOT NULL,
     package_lpa VARCHAR(32) NOT NULL,
     min_cgpa NUMERIC(4,2) NOT NULL DEFAULT 7.5,
+    allowed_backlogs INT DEFAULT 0,
     location VARCHAR(255) NOT NULL,
     deadline VARCHAR(64) NOT NULL,
+    drive_date VARCHAR(64) DEFAULT '',
+    status VARCHAR(32) DEFAULT 'active' CHECK (status IN ('draft', 'active', 'selection', 'completed', 'closed')),
     eligible_count INT DEFAULT 0,
     applied_count INT DEFAULT 0,
+    selected_count INT DEFAULT 0,
+    department_target TEXT[] DEFAULT ARRAY['AIDS', 'CSE'],
     description TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -250,9 +269,44 @@ CREATE TABLE IF NOT EXISTS public.placement_applications (
     company VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL,
     stage placement_stage_type DEFAULT 'Application Received & Screening',
-    status VARCHAR(32) DEFAULT 'active',
+    status VARCHAR(32) DEFAULT 'active' CHECK (status IN ('active', 'offer', 'rejected')),
     applied_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(drive_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.placement_interviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    drive_id UUID REFERENCES public.placement_drives(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) REFERENCES public.students(id) ON DELETE CASCADE,
+    student_name VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NOT NULL,
+    type VARCHAR(32) DEFAULT 'Interview' CHECK (type IN ('Assessment', 'Test', 'Interview')),
+    stage VARCHAR(128) NOT NULL,
+    scheduled_date VARCHAR(64) NOT NULL,
+    time_slot VARCHAR(64) NOT NULL,
+    venue VARCHAR(255) NOT NULL,
+    panel VARCHAR(255) DEFAULT 'CDC Interview Panel',
+    status VARCHAR(32) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled', 'not_attended', 'selected', 'rejected')),
+    score_or_notes TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.placement_offers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    drive_id UUID REFERENCES public.placement_drives(id) ON DELETE SET NULL,
+    student_id VARCHAR(64) REFERENCES public.students(id) ON DELETE CASCADE,
+    student_name VARCHAR(255) NOT NULL,
+    dept_code VARCHAR(32) REFERENCES public.departments(code) ON DELETE SET NULL,
+    company VARCHAR(255) NOT NULL,
+    role VARCHAR(255) NOT NULL,
+    package_lpa VARCHAR(32) NOT NULL,
+    offer_date VARCHAR(64) NOT NULL,
+    joining_date VARCHAR(64) DEFAULT '',
+    offer_status VARCHAR(32) DEFAULT 'extended' CHECK (offer_status IN ('extended', 'accepted', 'declined', 'revoked')),
+    placement_status VARCHAR(32) DEFAULT 'pending_acceptance' CHECK (placement_status IN ('placed', 'pending_acceptance', 'declined')),
+    letter_url TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 13. LEAVE REQUESTS
@@ -483,6 +537,10 @@ ALTER TABLE public.course_materials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.revaluation_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fee_concessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.placement_drives ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.placement_interviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.placement_offers ENABLE ROW LEVEL SECURITY;
 
 -- Read policies for common academic structures
 CREATE POLICY "Academic structure viewable by authenticated users" ON public.programs
@@ -507,6 +565,37 @@ CREATE POLICY "Students see own revaluations" ON public.revaluation_requests
 
 CREATE POLICY "Announcements viewable by all authenticated" ON public.announcements
     FOR SELECT TO authenticated USING (true);
+
+-- Placement Policies & RBAC Controls
+CREATE POLICY "Companies viewable by authenticated users" ON public.companies
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Placement officer and admin manage companies" ON public.companies
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin')));
+
+CREATE POLICY "Placement drives viewable by authenticated users" ON public.placement_drives
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Placement officer and admin manage placement drives" ON public.placement_drives
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin')));
+
+CREATE POLICY "Placement interviews viewable by candidate and authorized roles" ON public.placement_interviews
+    FOR SELECT TO authenticated
+    USING (student_id IN (SELECT id FROM public.students WHERE user_id = auth.uid()) OR EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin', 'hod', 'principal')));
+
+CREATE POLICY "Placement officer and admin manage interviews" ON public.placement_interviews
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin')));
+
+CREATE POLICY "Placement offers viewable by candidate and authorized roles" ON public.placement_offers
+    FOR SELECT TO authenticated
+    USING (student_id IN (SELECT id FROM public.students WHERE user_id = auth.uid()) OR EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin', 'hod', 'principal')));
+
+CREATE POLICY "Placement officer and admin manage offers" ON public.placement_offers
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role IN ('placement', 'admin')));
 
 -- Explicit Student-Specific Ownership & RBAC Guard Policies
 CREATE POLICY "Students see own profile" ON public.students
@@ -551,6 +640,10 @@ CREATE INDEX IF NOT EXISTS idx_attendance_student ON public.attendance_records(s
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON public.assignment_submissions(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_internal_marks_course ON public.internal_marks(course_code);
 CREATE INDEX IF NOT EXISTS idx_placement_apps_drive ON public.placement_applications(drive_id);
+CREATE INDEX IF NOT EXISTS idx_placement_apps_student ON public.placement_applications(student_id);
+CREATE INDEX IF NOT EXISTS idx_placement_interviews_drive ON public.placement_interviews(drive_id);
+CREATE INDEX IF NOT EXISTS idx_placement_interviews_student ON public.placement_interviews(student_id);
+CREATE INDEX IF NOT EXISTS idx_placement_offers_student ON public.placement_offers(student_id);
 CREATE INDEX IF NOT EXISTS idx_leave_requests_student ON public.leave_requests(student_id);
 CREATE INDEX IF NOT EXISTS idx_timetable_section ON public.timetable_entries(section_code);
 CREATE INDEX IF NOT EXISTS idx_timetable_room ON public.timetable_entries(room);

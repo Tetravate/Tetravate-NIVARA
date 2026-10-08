@@ -11,6 +11,7 @@ import ProfileModal from './components/ProfileModal';
 import AccountSettingsModal from './components/AccountSettingsModal';
 import LoginPage from './components/auth/LoginPage';
 import Toast from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import { WifiOff } from 'lucide-react';
 import './styles/app.css';
 
@@ -38,6 +39,8 @@ function DashboardFallback() {
 function MainAppShell() {
   const {
     currentRole,
+    activeTab,
+    setActiveTab,
     isOffline,
     toasts,
     dismissToast,
@@ -64,18 +67,20 @@ function MainAppShell() {
           </div>
         )}
 
-        {/* Dynamic Role-Based Content Area with Code-Splitting Suspense */}
+        {/* Dynamic Role-Based Content Area with Code-Splitting Suspense & Error Guard */}
         <main className="content-container">
-          <Suspense fallback={<DashboardFallback />}>
-            {currentRole === 'student' && <StudentDashboard />}
-            {currentRole === 'faculty' && <FacultyDashboard />}
-            {currentRole === 'hod' && <HODDashboard />}
-            {currentRole === 'principal' && <PrincipalDashboard />}
-            {currentRole === 'admin' && <AdminDashboard />}
-            {currentRole === 'exam_cell' && <ExamCellDashboard />}
-            {currentRole === 'finance' && <FinanceDashboard />}
-            {currentRole === 'placement' && <PlacementDashboard />}
-          </Suspense>
+          <ErrorBoundary key={`${currentRole}-${activeTab}`} onReset={() => setActiveTab('home')}>
+            <Suspense fallback={<DashboardFallback />}>
+              {currentRole === 'student' && <StudentDashboard />}
+              {currentRole === 'faculty' && <FacultyDashboard />}
+              {currentRole === 'hod' && <HODDashboard />}
+              {currentRole === 'principal' && <PrincipalDashboard />}
+              {currentRole === 'admin' && <AdminDashboard />}
+              {currentRole === 'exam_cell' && <ExamCellDashboard />}
+              {currentRole === 'finance' && <FinanceDashboard />}
+              {currentRole === 'placement' && <PlacementDashboard />}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

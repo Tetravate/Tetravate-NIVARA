@@ -18,6 +18,7 @@ export default function ExamCellStudentRecords() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
+  const [selectedSem, setSelectedSem] = useState('all');
   const [selectedEligibility, setSelectedEligibility] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState(null);
 

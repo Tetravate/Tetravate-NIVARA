@@ -7,7 +7,7 @@ import {
 } from '../services/authService';
 import { dataService } from '../services/dataService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { isValidModuleForRole, getDefaultModuleForRole } from '../data/navigationConfig';
+import { isValidModuleForRole, getDefaultModuleForRole, resolveCanonicalModule } from '../data/navigationConfig';
 import { can } from '../services/permissionService';
 
 const NivaraContext = createContext();
@@ -140,8 +140,8 @@ export function NivaraProvider({ children }) {
     const rawTabId = parts[1] || 'home';
     const isValidRole = ROLES.some((r) => r.id === roleId);
     if (isValidRole) {
-      const validTab = isValidModuleForRole(roleId, rawTabId) ? rawTabId : getDefaultModuleForRole(roleId);
-      return { role: roleId, tab: validTab };
+      const canonicalTab = resolveCanonicalModule(roleId, rawTabId) || getDefaultModuleForRole(roleId);
+      return { role: roleId, tab: canonicalTab };
     }
     return null;
   }, [ROLES]);
@@ -204,11 +204,9 @@ export function NivaraProvider({ children }) {
 
   // Synchronize URL Hash when role or tab changes
   const setActiveTab = (tab) => {
-    if (!isValidModuleForRole(currentRole, tab)) {
-      tab = getDefaultModuleForRole(currentRole);
-    }
-    setActiveTabState(tab);
-    window.location.hash = `#/${currentRole}/${tab}`;
+    const canonical = resolveCanonicalModule(currentRole, tab) || getDefaultModuleForRole(currentRole);
+    setActiveTabState(canonical);
+    window.location.hash = `#/${currentRole}/${canonical}`;
   };
 
   // Real Login Method
@@ -292,7 +290,8 @@ export function NivaraProvider({ children }) {
       }
 
       // Check 2: Invalid module/tab within role
-      if (!isValidModuleForRole(parsed.role, parsed.tab)) {
+      const canonicalTab = resolveCanonicalModule(parsed.role, parsed.tab);
+      if (!canonicalTab) {
         const safeTab = getDefaultModuleForRole(parsed.role);
         window.location.hash = `#/${parsed.role}/${safeTab}`;
         showToast(`Module Not Found: Redirected to ${parsed.role} home.`, 'info');
@@ -303,8 +302,8 @@ export function NivaraProvider({ children }) {
       if (parsed.role !== currentRole) {
         setCurrentRole(parsed.role);
       }
-      if (parsed.tab !== activeTab) {
-        setActiveTabState(parsed.tab);
+      if (canonicalTab !== activeTab) {
+        setActiveTabState(canonicalTab);
       }
     };
 
@@ -822,7 +821,54 @@ export function NivaraProvider({ children }) {
   ]));
 
 
-  // 8. Placement Opportunities & Applications
+  // 8. Placement Opportunities, Companies, Applications, Interviews & Offers
+  const [companies, setCompanies] = useState(() => getStoredOrFallback('companies', [
+    {
+      id: 'comp-1',
+      name: 'Google DeepMind & Systems',
+      category: 'Tier-1 Super Dream · Artificial Intelligence & Cloud',
+      website: 'https://deepmind.google',
+      hrContact: 'Rohan Deshmukh (Lead Campus Recruiter, APAC)',
+      hrEmail: 'r.deshmukh@google.com',
+      hrPhone: '+91 80 6721 8900',
+      activeStatus: 'active',
+      notes: 'Day-1 corporate partner. Algorithmic screening and systems rounds required.',
+    },
+    {
+      id: 'comp-2',
+      name: 'Tetravate Engineering Labs',
+      category: 'Product Engineering & Distributed Systems',
+      website: 'https://tetravate.io',
+      hrContact: 'Meera Krishnan (Director of University Relations)',
+      hrEmail: 'careers@tetravate.io',
+      hrPhone: '+91 44 4890 2200',
+      activeStatus: 'active',
+      notes: 'Core hiring partner for Full-Stack Systems, Distributed Cloud, and AI Systems.',
+    },
+    {
+      id: 'comp-3',
+      name: 'Microsoft Azure Core',
+      category: 'Tier-1 Cloud Infrastructure & Enterprise Systems',
+      website: 'https://microsoft.com/cloud',
+      hrContact: 'Anand Vardhan (University Talent Acquisition)',
+      hrEmail: 'anand.v@microsoft.com',
+      hrPhone: '+91 40 6698 1000',
+      activeStatus: 'active',
+      notes: 'Annual campus partnership. Cloud virtualization & OS engineering roles.',
+    },
+    {
+      id: 'comp-4',
+      name: 'Amazon AWS Cloud',
+      category: 'Cloud Computing & Distributed Data Systems',
+      website: 'https://aws.amazon.com',
+      hrContact: 'Deepak Nambiar (Regional Talent Partner)',
+      hrEmail: 'deepak.n@amazon.com',
+      hrPhone: '+91 80 4103 4000',
+      activeStatus: 'active',
+      notes: 'Upcoming Spring 2027 hiring pool engagement scheduled.',
+    },
+  ]));
+
   const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', [
     {
       id: 'drive-1',
@@ -833,12 +879,21 @@ export function NivaraProvider({ children }) {
       minCgpa: 8.5,
       allowedBacklogs: 0,
       deadline: '16 Oct 2026',
+      driveDate: '24 Oct 2026',
       status: 'active',
       eligibleCount: 42,
       appliedCount: 28,
       selectedCount: 4,
       departmentTarget: ['AIDS', 'CSE'],
       description: 'Frontier AI engineering, distributed neural kernels, and multimodal model infrastructure.',
+      selectionStages: [
+        'Application Screening',
+        'Online Assessment',
+        'Technical Interview (Round 1)',
+        'Technical Interview (Round 2)',
+        'Final HR Evaluation',
+        'Offer Extended (Selected)',
+      ],
     },
     {
       id: 'drive-2',
@@ -849,12 +904,21 @@ export function NivaraProvider({ children }) {
       minCgpa: 8.0,
       allowedBacklogs: 0,
       deadline: '20 Oct 2026',
+      driveDate: '28 Oct 2026',
       status: 'active',
       eligibleCount: 88,
       appliedCount: 52,
       selectedCount: 8,
       departmentTarget: ['AIDS', 'CSE', 'ECE'],
       description: 'Engineering resilient consumer SaaS platforms and synchronized distributed operating systems.',
+      selectionStages: [
+        'Application Screening',
+        'Technical Assessment',
+        'Technical Interview (Round 1)',
+        'Technical Interview (Round 2)',
+        'Final HR Evaluation',
+        'Offer Extended (Selected)',
+      ],
     },
     {
       id: 'drive-3',
@@ -865,12 +929,20 @@ export function NivaraProvider({ children }) {
       minCgpa: 7.5,
       allowedBacklogs: 0,
       deadline: '25 Oct 2026',
+      driveDate: '02 Nov 2026',
       status: 'active',
       eligibleCount: 195,
       appliedCount: 110,
       selectedCount: 12,
       departmentTarget: ['AIDS', 'CSE', 'ECE', 'MECH'],
       description: 'Hyper-scale cloud virtualization, distributed storage systems, and Linux performance tuning.',
+      selectionStages: [
+        'Application Screening',
+        'Online Assessment',
+        'Technical Interview (Round 1)',
+        'Final HR Evaluation',
+        'Offer Extended (Selected)',
+      ],
     },
   ]));
 
@@ -882,8 +954,154 @@ export function NivaraProvider({ children }) {
       company: 'Tetravate Engineering Labs',
       role: 'Product Systems Architect',
       appliedAt: '05 Oct 2026',
-      stage: 'Shortlisted for Technical Round',
+      stage: 'Technical Interview (Round 1)',
       status: 'active',
+    },
+    {
+      driveId: 'drive-1',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      company: 'Google DeepMind & Systems',
+      role: 'Research Software Engineer',
+      appliedAt: '02 Oct 2026',
+      stage: 'Final HR Evaluation',
+      status: 'active',
+    },
+    {
+      driveId: 'drive-2',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      company: 'Tetravate Engineering Labs',
+      role: 'Product Systems Architect',
+      appliedAt: '01 Oct 2026',
+      stage: 'Offer Extended (Selected)',
+      status: 'offer',
+    },
+    {
+      driveId: 'drive-3',
+      studentId: '2024-CSE-102',
+      studentName: 'Bhavana Patel',
+      company: 'Microsoft Azure Core',
+      role: 'Cloud Infrastructure Associate',
+      appliedAt: '04 Oct 2026',
+      stage: 'Shortlisted for Online Assessment',
+      status: 'active',
+    },
+    {
+      driveId: 'drive-2',
+      studentId: '2024-CSE-102',
+      studentName: 'Bhavana Patel',
+      company: 'Tetravate Engineering Labs',
+      role: 'Product Systems Architect',
+      appliedAt: '03 Oct 2026',
+      stage: 'Offer Extended (Selected)',
+      status: 'offer',
+    },
+    {
+      driveId: 'drive-3',
+      studentId: '2024-AIDS-027',
+      studentName: 'Tanvi Saxena',
+      company: 'Microsoft Azure Core',
+      role: 'Cloud Infrastructure Associate',
+      appliedAt: '07 Oct 2026',
+      stage: 'Application Received & Screening',
+      status: 'active',
+    },
+  ]));
+
+  const [placementInterviews, setPlacementInterviews] = useState(() => getStoredOrFallback('placementInterviews', [
+    {
+      id: 'int-1',
+      driveId: 'drive-2',
+      company: 'Tetravate Engineering Labs',
+      studentId: '2024-AIDS-042',
+      studentName: 'Aadhi Narayanan',
+      type: 'Interview',
+      stage: 'Technical Interview (Round 1)',
+      scheduledDate: '14 Oct 2026',
+      timeSlot: '10:00 AM – 11:00 AM',
+      venue: 'CDC Interview Suite 2',
+      panel: 'Dr. Priya Raman / Mr. S. Iyer (Tetravate Lead)',
+      status: 'scheduled',
+      scoreOrNotes: 'Pending candidate evaluation',
+    },
+    {
+      id: 'int-2',
+      driveId: 'drive-1',
+      company: 'Google DeepMind & Systems',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      type: 'Interview',
+      stage: 'Final HR Evaluation',
+      scheduledDate: '12 Oct 2026',
+      timeSlot: '02:00 PM – 03:00 PM',
+      venue: 'Executive Boardroom B',
+      panel: 'Rohan Deshmukh (Google APAC Recruiter)',
+      status: 'scheduled',
+      scoreOrNotes: 'Round 2 Technical cleared with 98/100',
+    },
+    {
+      id: 'int-3',
+      driveId: 'drive-3',
+      company: 'Microsoft Azure Core',
+      studentId: '2024-CSE-102',
+      studentName: 'Bhavana Patel',
+      type: 'Assessment',
+      stage: 'Online Assessment',
+      scheduledDate: '11 Oct 2026',
+      timeSlot: '09:30 AM – 11:30 AM',
+      venue: 'Computing Lab 3 (Block B)',
+      panel: 'Microsoft University Proctoring Team',
+      status: 'completed',
+      scoreOrNotes: 'Score: 92/100 · Shortlisted for Technical Interview',
+    },
+    {
+      id: 'int-4',
+      driveId: 'drive-2',
+      company: 'Tetravate Engineering Labs',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      type: 'Interview',
+      stage: 'Final HR Evaluation',
+      scheduledDate: '05 Oct 2026',
+      timeSlot: '04:00 PM – 04:30 PM',
+      venue: 'CDC Suite 1',
+      panel: 'Meera Krishnan (Tetravate HR)',
+      status: 'selected',
+      scoreOrNotes: 'Cleared all technical & culture rounds. Recommended for offer.',
+    },
+  ]));
+
+  const [placementOffers, setPlacementOffers] = useState(() => getStoredOrFallback('placementOffers', [
+    {
+      id: 'off-1',
+      driveId: 'drive-2',
+      studentId: '2024-AIDS-003',
+      studentName: 'Arun Kumar',
+      deptCode: 'AIDS',
+      company: 'Tetravate Engineering Labs',
+      role: 'Product Systems Architect',
+      packageLpa: '24 LPA',
+      offerDate: '06 Oct 2026',
+      joiningDate: '01 Jul 2027',
+      offerStatus: 'accepted',
+      placementStatus: 'placed',
+      letterUrl: 'NIVARA-OFFER-2026-TEL-088.pdf',
+    },
+    {
+      id: 'off-2',
+      driveId: 'drive-2',
+      studentId: '2024-CSE-102',
+      studentName: 'Bhavana Patel',
+      deptCode: 'CSE',
+      company: 'Tetravate Engineering Labs',
+      role: 'Product Systems Architect',
+      packageLpa: '22 LPA',
+      offerDate: '07 Oct 2026',
+      joiningDate: '15 Jul 2027',
+      offerStatus: 'extended',
+      placementStatus: 'pending_acceptance',
+      letterUrl: 'NIVARA-OFFER-2026-TEL-092.pdf',
     },
   ]));
 
@@ -1388,6 +1606,9 @@ export function NivaraProvider({ children }) {
       } else if (type === 'SYNC_PLACEMENTS') {
         if (data.placementDrives) setPlacementDrives(data.placementDrives);
         if (data.studentPlacementApplications) setStudentPlacementApplications(data.studentPlacementApplications);
+        if (data.companies) setCompanies(data.companies);
+        if (data.placementInterviews) setPlacementInterviews(data.placementInterviews);
+        if (data.placementOffers) setPlacementOffers(data.placementOffers);
         if (data.notifications) setNotifications(data.notifications);
         if (data.auditLogs) setAuditLogs(data.auditLogs);
       } else if (type === 'SYNC_EXAMS') {
@@ -1508,6 +1729,9 @@ export function NivaraProvider({ children }) {
   useEffect(() => { saveToStorage('paymentHistory', paymentHistory); }, [paymentHistory]);
   useEffect(() => { saveToStorage('placementDrives', placementDrives); }, [placementDrives]);
   useEffect(() => { saveToStorage('studentPlacementApplications', studentPlacementApplications); }, [studentPlacementApplications]);
+  useEffect(() => { saveToStorage('companies', companies); }, [companies]);
+  useEffect(() => { saveToStorage('placementInterviews', placementInterviews); }, [placementInterviews]);
+  useEffect(() => { saveToStorage('placementOffers', placementOffers); }, [placementOffers]);
   useEffect(() => { saveToStorage('leaveRequests', leaveRequests); }, [leaveRequests]);
   useEffect(() => { saveToStorage('auditLogs', auditLogs); }, [auditLogs]);
   useEffect(() => { saveToStorage('notifications', notifications); }, [notifications]);
@@ -2421,6 +2645,321 @@ export function NivaraProvider({ children }) {
     showToast(`Candidate stage updated: ${newStage} ✓`, 'success');
   };
 
+  const updatePlacementDrive = (id, updatedFields) => {
+    const updated = placementDrives.map((d) => (d.id === id ? { ...d, ...updatedFields } : d));
+    setPlacementDrives(updated);
+    dataService.updatePlacementDrive(id, updatedFields);
+
+    const target = placementDrives.find((d) => d.id === id);
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Updated Placement Drive',
+      details: `Modified parameters for ${target?.company || 'Drive'} (${target?.role || 'Role'}).`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      placementDrives: updated,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Drive details updated successfully ✓`, 'success');
+  };
+
+  const createCompany = (companyData) => {
+    const newCompany = {
+      id: `comp-${Date.now()}`,
+      name: companyData.name,
+      category: companyData.category || 'Core Engineering Partner',
+      website: companyData.website || '',
+      hrContact: companyData.hrContact || '',
+      hrEmail: companyData.hrEmail || '',
+      hrPhone: companyData.hrPhone || '',
+      activeStatus: companyData.activeStatus || 'active',
+      notes: companyData.notes || '',
+    };
+    const updated = [newCompany, ...companies];
+    setCompanies(updated);
+    dataService.createCompany(newCompany);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Registered Corporate Partner',
+      details: `Added corporate entity: ${newCompany.name} (${newCompany.category}).`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      companies: updated,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Company ${newCompany.name} registered ✓`, 'success');
+    return newCompany;
+  };
+
+  const updateCompany = (id, updatedFields) => {
+    const updated = companies.map((c) => (c.id === id ? { ...c, ...updatedFields } : c));
+    setCompanies(updated);
+    dataService.updateCompany(id, updatedFields);
+
+    const target = companies.find((c) => c.id === id);
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Updated Company Dossier',
+      details: `Updated information for partner company ${target?.name || id}.`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      companies: updated,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Partner company profile updated ✓`, 'success');
+  };
+
+  const toggleCompanyStatus = (id) => {
+    const target = companies.find((c) => c.id === id);
+    if (!target) return;
+    const newStatus = target.activeStatus === 'active' ? 'inactive' : 'active';
+    updateCompany(id, { activeStatus: newStatus });
+  };
+
+  const scheduleInterview = (interviewData) => {
+    const newInterview = {
+      id: `int-${Date.now()}`,
+      driveId: interviewData.driveId,
+      company: interviewData.company,
+      studentId: interviewData.studentId,
+      studentName: interviewData.studentName,
+      type: interviewData.type || 'Interview',
+      stage: interviewData.stage || 'Technical Interview (Round 1)',
+      scheduledDate: interviewData.scheduledDate,
+      timeSlot: interviewData.timeSlot,
+      venue: interviewData.venue || 'CDC Interview Suite',
+      panel: interviewData.panel || 'Technical Assessment Panel',
+      status: 'scheduled',
+      scoreOrNotes: interviewData.scoreOrNotes || 'Scheduled by Placement Cell',
+    };
+
+    const updatedInterviews = [newInterview, ...placementInterviews];
+    setPlacementInterviews(updatedInterviews);
+    dataService.scheduleInterview(newInterview);
+
+    const newNotif = {
+      id: `notif-${Date.now()}`,
+      recipientRole: 'student',
+      title: `Interview Scheduled: ${newInterview.company}`,
+      message: `${newInterview.stage} on ${newInterview.scheduledDate} at ${newInterview.timeSlot} (${newInterview.venue}).`,
+      timeAgo: 'Just now',
+      unread: true,
+      tier: 'urgent',
+      actionTab: 'placement',
+    };
+    const updatedNotifs = [newNotif, ...notifications];
+    setNotifications(updatedNotifs);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Scheduled Candidate Assessment',
+      details: `Scheduled ${newInterview.stage} for ${newInterview.studentName} (${newInterview.company}).`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      placementInterviews: updatedInterviews,
+      notifications: updatedNotifs,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Interview scheduled for ${newInterview.studentName} ✓`, 'success');
+    return newInterview;
+  };
+
+  const updateInterviewOutcome = (id, outcomeStatus, scoreOrNotes = '', advanceAppStage = null) => {
+    const target = placementInterviews.find((i) => i.id === id);
+    if (!target) return;
+
+    const updatedInterviews = placementInterviews.map((i) =>
+      i.id === id ? { ...i, status: outcomeStatus, scoreOrNotes: scoreOrNotes || i.scoreOrNotes } : i
+    );
+    setPlacementInterviews(updatedInterviews);
+    dataService.updateInterviewOutcome(id, { status: outcomeStatus, score_or_notes: scoreOrNotes });
+
+    let updatedApps = studentPlacementApplications;
+    if (advanceAppStage) {
+      updatedApps = studentPlacementApplications.map((app) => {
+        if (app.driveId === target.driveId && app.studentId === target.studentId) {
+          return {
+            ...app,
+            stage: advanceAppStage,
+            status: advanceAppStage.toLowerCase().includes('reject') ? 'rejected' : advanceAppStage.toLowerCase().includes('offer') ? 'offer' : 'active',
+          };
+        }
+        return app;
+      });
+      setStudentPlacementApplications(updatedApps);
+      dataService.advancePlacementStage(target.driveId, target.studentId, advanceAppStage);
+    }
+
+    const newNotif = {
+      id: `notif-${Date.now()}`,
+      recipientRole: 'student',
+      title: `Interview Result: ${target.company}`,
+      message: `Status for ${target.stage}: ${outcomeStatus.toUpperCase()}${advanceAppStage ? ` · Advanced to "${advanceAppStage}"` : ''}.`,
+      timeAgo: 'Just now',
+      unread: true,
+      tier: outcomeStatus === 'selected' ? 'success' : 'important',
+      actionTab: 'placement',
+    };
+    const updatedNotifs = [newNotif, ...notifications];
+    setNotifications(updatedNotifs);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Recorded Interview Outcome',
+      details: `${target.studentName} · ${target.stage} at ${target.company} marked as ${outcomeStatus}.`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      placementInterviews: updatedInterviews,
+      studentPlacementApplications: updatedApps,
+      notifications: updatedNotifs,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Interview outcome recorded: ${outcomeStatus} ✓`, 'success');
+  };
+
+  const createPlacementOffer = (offerData) => {
+    const newOffer = {
+      id: `off-${Date.now()}`,
+      driveId: offerData.driveId || null,
+      studentId: offerData.studentId,
+      studentName: offerData.studentName,
+      deptCode: offerData.deptCode || 'AIDS',
+      company: offerData.company,
+      role: offerData.role,
+      packageLpa: offerData.packageLpa.endsWith('LPA') ? offerData.packageLpa : `${offerData.packageLpa} LPA`,
+      offerDate: offerData.offerDate || 'Today',
+      joiningDate: offerData.joiningDate || 'July 2027',
+      offerStatus: offerData.offerStatus || 'extended',
+      placementStatus: offerData.placementStatus || 'pending_acceptance',
+      letterUrl: offerData.letterUrl || `NIVARA-OFFER-${Date.now().toString().slice(-4)}.pdf`,
+    };
+
+    const updatedOffers = [newOffer, ...placementOffers];
+    setPlacementOffers(updatedOffers);
+    dataService.createPlacementOffer(newOffer);
+
+    // Update application stage if matching
+    const updatedApps = studentPlacementApplications.map((app) => {
+      if ((app.driveId === offerData.driveId || app.company === offerData.company) && app.studentId === offerData.studentId) {
+        return { ...app, stage: 'Offer Extended (Selected)', status: 'offer' };
+      }
+      return app;
+    });
+    setStudentPlacementApplications(updatedApps);
+
+    // Update drive selectedCount
+    const updatedDrives = placementDrives.map((d) =>
+      d.id === offerData.driveId || d.company === offerData.company ? { ...d, selectedCount: (d.selectedCount || 0) + 1 } : d
+    );
+    setPlacementDrives(updatedDrives);
+
+    const newNotif = {
+      id: `notif-${Date.now()}`,
+      recipientRole: 'student',
+      title: `Congratulations! Offer from ${newOffer.company}`,
+      message: `You have received an offer for ${newOffer.role} (${newOffer.packageLpa}). Check Offers tab.`,
+      timeAgo: 'Just now',
+      unread: true,
+      tier: 'success',
+      actionTab: 'placement',
+    };
+    const updatedNotifs = [newNotif, ...notifications];
+    setNotifications(updatedNotifs);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Issued Placement Offer',
+      details: `Extended offer to ${newOffer.studentName} for ${newOffer.role} at ${newOffer.company} (${newOffer.packageLpa}).`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      placementOffers: updatedOffers,
+      studentPlacementApplications: updatedApps,
+      placementDrives: updatedDrives,
+      notifications: updatedNotifs,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Placement offer registered for ${newOffer.studentName} (${newOffer.company}) ✓`, 'success');
+    return newOffer;
+  };
+
+  const updatePlacementOfferStatus = (id, newOfferStatus, newPlacementStatus) => {
+    const target = placementOffers.find((o) => o.id === id);
+    if (!target) return;
+
+    const updatedOffers = placementOffers.map((o) =>
+      o.id === id ? { ...o, offerStatus: newOfferStatus, placementStatus: newPlacementStatus } : o
+    );
+    setPlacementOffers(updatedOffers);
+    dataService.updatePlacementOffer(id, { offer_status: newOfferStatus, placement_status: newPlacementStatus });
+
+    // If accepted, update student application stage to 'Placed'
+    let updatedApps = studentPlacementApplications;
+    if (newOfferStatus === 'accepted' || newPlacementStatus === 'placed') {
+      updatedApps = studentPlacementApplications.map((app) => {
+        if (app.studentId === target.studentId && app.company === target.company) {
+          return { ...app, stage: 'Placed', status: 'offer' };
+        }
+        return app;
+      });
+      setStudentPlacementApplications(updatedApps);
+    }
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actorRole: 'Placement Officer',
+      actorName: currentUser?.userName || 'Dr. S. Kapoor',
+      action: 'Updated Offer Status',
+      details: `${target.studentName} offer with ${target.company} marked as ${newOfferStatus} (Placement: ${newPlacementStatus}).`,
+    };
+    const updatedLogs = [newLog, ...auditLogs];
+    setAuditLogs(updatedLogs);
+
+    broadcastSync('SYNC_PLACEMENTS', {
+      placementOffers: updatedOffers,
+      studentPlacementApplications: updatedApps,
+      auditLogs: updatedLogs,
+    });
+    showToast(`Offer status updated: ${newOfferStatus} ✓`, 'success');
+  };
+
   // WORKFLOW 6: CONTINUOUS ASSESSMENT & SEMESTER RESULTS MODERATION
   const updateInternalMarks = (courseCode, newScore, lock = false) => {
     const updatedMarks = internalMarks.map((m) => {
@@ -3105,7 +3644,15 @@ export function NivaraProvider({ children }) {
         refundRequests,
         setRefundRequests,
         placementDrives,
+        setPlacementDrives,
         studentPlacementApplications,
+        setStudentPlacementApplications,
+        companies,
+        setCompanies,
+        placementInterviews,
+        setPlacementInterviews,
+        placementOffers,
+        setPlacementOffers,
         leaveRequests,
         auditLogs,
         notifications,
@@ -3142,8 +3689,16 @@ export function NivaraProvider({ children }) {
         createRefundRequest,
         processRefundStatus,
         createPlacementDrive,
+        updatePlacementDrive,
         applyPlacementDrive,
         advancePlacementCandidate,
+        createCompany,
+        updateCompany,
+        toggleCompanyStatus,
+        scheduleInterview,
+        updateInterviewOutcome,
+        createPlacementOffer,
+        updatePlacementOfferStatus,
         updateInternalMarks,
         setInternalMarksLock,
         addExamSession,

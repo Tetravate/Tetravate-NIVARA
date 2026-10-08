@@ -338,5 +338,186 @@ export const dataService = {
     }
     return { success: true, data: announcement };
   },
+
+  /**
+   * Placement & Corporate Recruitment Service
+   */
+  async getCompanies(fallbackData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('companies').select('*').order('name');
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn('Supabase companies query failed:', err);
+      }
+    }
+    return fallbackData;
+  },
+
+  async createCompany(companyData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('companies').insert([companyData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase company insert failed:', err);
+      }
+    }
+    return { success: true, data: companyData };
+  },
+
+  async updateCompany(id, companyData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('companies').update(companyData).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase company update failed:', err);
+      }
+    }
+    return { success: true };
+  },
+
+  async getPlacementDrives(fallbackData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_drives').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn('Supabase placement drives query failed:', err);
+      }
+    }
+    return fallbackData;
+  },
+
+  async createPlacementDrive(driveData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_drives').insert([driveData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase placement drive insert failed:', err);
+      }
+    }
+    return { success: true, data: driveData };
+  },
+
+  async updatePlacementDrive(id, driveData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('placement_drives').update(driveData).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase placement drive update failed:', err);
+      }
+    }
+    return { success: true };
+  },
+
+  async getPlacementApplications(fallbackData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_applications').select('*').order('applied_at', { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn('Supabase placement applications query failed:', err);
+      }
+    }
+    return fallbackData;
+  },
+
+  async submitPlacementApplication(applicationData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_applications').insert([applicationData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase placement application insert failed:', err);
+      }
+    }
+    return { success: true, data: applicationData };
+  },
+
+  async advancePlacementStage(driveId, studentId, newStage) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('placement_applications')
+          .update({ stage: newStage, status: newStage.toLowerCase().includes('reject') ? 'rejected' : newStage.toLowerCase().includes('offer') ? 'offer' : 'active' })
+          .match({ drive_id: driveId, student_id: studentId });
+      } catch (err) {
+        console.warn('Supabase placement stage update failed:', err);
+      }
+    }
+    return { success: true };
+  },
+
+  async getPlacementInterviews(fallbackData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_interviews').select('*').order('scheduled_date');
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn('Supabase placement interviews query failed:', err);
+      }
+    }
+    return fallbackData;
+  },
+
+  async scheduleInterview(interviewData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_interviews').insert([interviewData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase interview insert failed:', err);
+      }
+    }
+    return { success: true, data: interviewData };
+  },
+
+  async updateInterviewOutcome(id, outcomeData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('placement_interviews').update(outcomeData).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase interview outcome update failed:', err);
+      }
+    }
+    return { success: true };
+  },
+
+  async getPlacementOffers(fallbackData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_offers').select('*').order('offer_date', { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (err) {
+        console.warn('Supabase placement offers query failed:', err);
+      }
+    }
+    return fallbackData;
+  },
+
+  async createPlacementOffer(offerData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('placement_offers').insert([offerData]).select().single();
+        if (!error) return { success: true, data };
+      } catch (err) {
+        console.warn('Supabase placement offer insert failed:', err);
+      }
+    }
+    return { success: true, data: offerData };
+  },
+
+  async updatePlacementOffer(id, offerData) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('placement_offers').update(offerData).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase placement offer update failed:', err);
+      }
+    }
+    return { success: true };
+  },
 };
 

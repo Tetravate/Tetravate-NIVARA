@@ -37,6 +37,7 @@ export default function StudentDashboard() {
     toggleAssignmentCompletion,
     placementDrives,
     studentPlacementApplications,
+    leaveRequests,
     submitLeaveRequest,
     examSessions,
     timetableEntries,
@@ -126,15 +127,15 @@ export default function StudentDashboard() {
   // -------------------------------------------------------------
   // SUB-NAVIGATION VIEW ROUTING BASED ON activeTab (11 EXACT MODULES)
   // -------------------------------------------------------------
-  if (activeTab === 'today') return <TodayTimeline onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'today' || activeTab === 'schedule') return <TodayTimeline onBack={() => setActiveTab('home')} />;
   if (activeTab === 'attendance') return <SmartAttendance onBack={() => setActiveTab('home')} />;
   if (activeTab === 'assignments') return <AssignmentsView onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'materials') return <StudentCoursesView onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'fees') return <StudentFeesView onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'placement') return <StudentPlacementView onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'leaves') return <StudentLeavesView onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'exams') return <ExamTimeline onBack={() => setActiveTab('home')} />;
-  if (activeTab === 'results') return <ResultsView onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'materials' || activeTab === 'courses') return <StudentCoursesView onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'fees' || activeTab === 'dues') return <StudentFeesView onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'placement' || activeTab === 'drives' || activeTab === 'placements') return <StudentPlacementView onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'leaves' || activeTab === 'leave') return <StudentLeavesView onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'exams' || activeTab === 'exam') return <ExamTimeline onBack={() => setActiveTab('home')} />;
+  if (activeTab === 'results' || activeTab === 'result') return <ResultsView onBack={() => setActiveTab('home')} />;
   if (activeTab === 'timetable') return <TimetableSwitch onBack={() => setActiveTab('home')} />;
   if (activeTab === 'profile') return <StudentProfile onBack={() => setActiveTab('home')} />;
 

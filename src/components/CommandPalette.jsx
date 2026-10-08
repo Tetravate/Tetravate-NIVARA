@@ -222,7 +222,7 @@ export default function CommandPalette() {
           category: 'Submissions & Grading',
           icon: CheckSquare,
           action: () => {
-            setActiveTab('submissions');
+            setActiveTab('assignments');
             setCommandPaletteOpen(false);
           },
         });
@@ -269,7 +269,7 @@ export default function CommandPalette() {
           category: 'Approvals Queue',
           icon: Calendar,
           action: () => {
-            setActiveTab('leaves');
+            setActiveTab('approvals');
             setCommandPaletteOpen(false);
           },
         });

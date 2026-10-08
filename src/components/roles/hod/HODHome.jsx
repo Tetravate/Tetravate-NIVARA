@@ -6,6 +6,7 @@ import {
   X,
   ArrowRight,
   ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader } from '../../workspace';
@@ -14,6 +15,7 @@ export default function HODHome({ onNavigate }) {
   const {
     departments,
     students,
+    facultyMembers,
     leaveRequests,
     approveLeaveRequest,
     coursesAttendance,

@@ -15,7 +15,9 @@ export default function StudentProfile({ onBack }) {
 
   const handleSave = (e) => {
     e.preventDefault();
-    updateUserProfile(formData);
+    if (typeof updateUserProfile === 'function') {
+      updateUserProfile(formData);
+    }
     setIsEditing(false);
   };
 

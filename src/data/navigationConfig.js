@@ -159,6 +159,58 @@ export const ROLE_NAVIGATION_REGISTRY = {
   placement: { title: 'Placement Office', items: PLACEMENT_NAV },
 };
 
+export const MODULE_ALIASES = {
+  student: {
+    courses: 'materials',
+    schedule: 'today',
+    dues: 'fees',
+    drives: 'placement',
+    placements: 'placement',
+    leave: 'leaves',
+    exam: 'exams',
+    result: 'results',
+  },
+  faculty: {
+    submissions: 'assignments',
+    schedule: 'today',
+    grading: 'marks',
+  },
+  hod: {
+    academics: 'performance',
+    'at-risk': 'at_risk',
+    leaves: 'approvals',
+    leave: 'approvals',
+  },
+  principal: {
+    academics: 'performance',
+    exams: 'exams_results',
+    results: 'exams_results',
+    financials: 'finance',
+    placement: 'placements',
+  },
+  admin: {
+    timetable: 'conflicts',
+    rooms: 'conflicts',
+    years: 'academic_years',
+    config: 'settings',
+    configuration: 'settings',
+    audit: 'audit_logs',
+    logs: 'audit_logs',
+  },
+  exam_cell: {
+    publish: 'results',
+    grades: 'marks',
+  },
+  finance: {
+    fees: 'structure',
+    dues_mgmt: 'dues',
+  },
+  placement: {
+    recruiter: 'companies',
+    interviews_rounds: 'interviews',
+  },
+};
+
 /**
  * Returns all navigation items for a specific role
  */
@@ -167,12 +219,25 @@ export function getNavigationForRole(role) {
 }
 
 /**
- * Validates if a target module/tab ID belongs to the specified role
+ * Resolves any module ID or recognized alias to the canonical module ID for that role
+ */
+export function resolveCanonicalModule(role, moduleId) {
+  if (!moduleId) return getDefaultModuleForRole(role);
+  const cleanId = String(moduleId).toLowerCase().trim();
+  const aliasMap = MODULE_ALIASES[role] || {};
+  const mapped = aliasMap[cleanId] || cleanId;
+  const roleNav = ROLE_NAVIGATION_REGISTRY[role];
+  if (roleNav && roleNav.items.some((item) => item.id === mapped)) {
+    return mapped;
+  }
+  return null;
+}
+
+/**
+ * Validates if a target module/tab ID belongs to the specified role (including recognized aliases)
  */
 export function isValidModuleForRole(role, moduleId) {
-  const roleNav = ROLE_NAVIGATION_REGISTRY[role];
-  if (!roleNav) return false;
-  return roleNav.items.some((item) => item.id === moduleId);
+  return resolveCanonicalModule(role, moduleId) !== null;
 }
 
 /**

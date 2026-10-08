@@ -122,7 +122,6 @@ export default function FacultyMaterials() {
       sectionCode: 'AIDS-A-SEM5',
       visibility: 'enrolled_class',
     });
-    setUploadBinaryAttempted(false);
   };
 
   const handleDownload = (material) => {

@@ -21,6 +21,8 @@ export default function StudentPlacementView({ onBack }) {
     currentUser,
     placementDrives,
     studentPlacementApplications,
+    placementOffers,
+    updatePlacementOfferStatus,
     applyPlacementDrive,
     showToast,
   } = useNivara();
@@ -28,9 +30,13 @@ export default function StudentPlacementView({ onBack }) {
   const activeStudentId = currentUser?.studentId || '2024-AIDS-042';
   const student = (students || []).find((s) => s.id === activeStudentId) || (students || [])[0] || {};
 
-  // Student's personal applications
+  // Student's personal applications & offers
   const myApplications = (studentPlacementApplications || []).filter(
     (a) => a.studentId === student.id || a.studentName === student.name
+  );
+
+  const myOffers = (placementOffers || []).filter(
+    (o) => o.studentId === student.id || o.studentName === student.name
   );
 
   const eligibleDrives = (placementDrives || []).filter(
@@ -170,6 +176,72 @@ export default function StudentPlacementView({ onBack }) {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* 4.5. My Placement Offers Section */}
+      {myOffers.length > 0 && (
+        <section>
+          <SectionHeader
+            title={`Corporate Placement Offers (${myOffers.length})`}
+            subtitle="Official corporate recruitment offers extended through CDC"
+          />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {myOffers.map((off, idx) => {
+              const isAccepted = off.placementStatus === 'placed' || off.offerStatus === 'accepted';
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1.15rem 1.25rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--state-success, var(--border-subtle))',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                        {off.company}
+                      </strong>
+                      <span className="badge badge-success" style={{ fontWeight: 700 }}>
+                        {off.packageLpa}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                      {off.role} · Extended on: {off.offerDate} · Joining: {off.joiningDate || 'TBD'}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {isAccepted ? (
+                      <span className="badge badge-success" style={{ padding: '0.45rem 0.85rem' }}>
+                        <CheckCircle2 size={13} /> Offer Formally Accepted (Placed)
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                          updatePlacementOfferStatus(off.id, 'accepted', 'placed');
+                          confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+                          showToast(`Congratulations! You have accepted the offer from ${off.company} ✓`, 'success');
+                        }}
+                      >
+                        Accept Offer & Confirm Placement
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
