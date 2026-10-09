@@ -3,7 +3,7 @@
  * Supports Supabase Auth (when credentials provided) + Fallback Institutional Auth.
  * Automatically resolves user role from profile records. Never requires manual role picking.
  */
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
 
 export const INSTITUTIONAL_ACCOUNTS = [
   {
@@ -139,16 +139,18 @@ export async function loginWithCredentials(email, password, remember = true) {
         provider: 'supabase',
       };
 
-      if (remember) {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-      } else {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+      if (typeof window !== 'undefined') {
+        if (remember && window.localStorage) {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+        } else if (window.sessionStorage) {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+        }
       }
 
       return { success: true, session: sessionObj };
     } catch (err) {
-      // Return error for Supabase attempt
-      return { success: false, error: err.message };
+      console.warn('Supabase Auth failed, checking institutional directory fallback:', err.message);
+      // Fall through to step 2 below
     }
   }
 
@@ -192,10 +194,12 @@ export async function loginWithCredentials(email, password, remember = true) {
     authenticatedAt: new Date().toISOString(),
   };
 
-  if (remember) {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-  } else {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+  if (typeof window !== 'undefined') {
+    if (remember && window.localStorage) {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+    } else if (window.sessionStorage) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
+    }
   }
 
   return { success: true, session: sessionObj };

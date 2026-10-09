@@ -27,8 +27,8 @@ export default function FacultyHome() {
   const facultyName = currentUser?.userName || currentUser?.name || 'Faculty Member';
   const facultyDept = currentUser?.dept || currentUser?.department || 'Academic Department';
 
-  const todaySessions = (timetableEntries || []).filter((e) => e.dayOfWeek === 'Tuesday');
-  const liveSession = todaySessions.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || (todaySessions.length > 0 ? todaySessions[0] : null);
+  const todaySessions = (timetableEntries || []).filter((e) => (e.dayOfWeek || e.day_of_week) === 'Tuesday');
+  const liveSession = todaySessions.find((e) => (e.startTime || e.start_time) <= '10:30:00' && (e.endTime || e.end_time) >= '10:00:00') || (todaySessions.length > 0 ? todaySessions[0] : null);
 
   const activeClass = liveSession ? {
     code: liveSession.courseCode || liveSession.code || 'CS301',

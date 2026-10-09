@@ -24,7 +24,7 @@ export default function TimetableSwitch({ onBack }) {
 
   // Extract courses for selected day directly from live context timetableEntries
   const getDaySchedule = (day) => {
-    const contextEntries = (timetableEntries || []).filter((e) => e.dayOfWeek === day);
+    const contextEntries = (timetableEntries || []).filter((e) => (e.dayOfWeek || e.day_of_week) === day);
 
     return contextEntries.map((e) => ({
       time: e.timeSlot || e.time || '09:00 - 10:00',

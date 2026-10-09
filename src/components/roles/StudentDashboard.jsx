@@ -62,13 +62,13 @@ export default function StudentDashboard() {
   // Urgency context & aggregated derived data
   // 1. RIGHT NOW: active class from timetable entries (Tuesday current schedule slot)
   const tuesdayEntries = (timetableEntries || [])
-    .filter((e) => e.dayOfWeek === 'Tuesday')
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    .filter((e) => (e.dayOfWeek || e.day_of_week) === 'Tuesday')
+    .sort((a, b) => ((a.startTime || a.start_time) || '').localeCompare((b.startTime || b.start_time) || ''));
 
-  const liveClass = tuesdayEntries.find((e) => e.startTime <= '10:30:00' && e.endTime >= '10:00:00') || (tuesdayEntries.length > 0 ? tuesdayEntries[0] : null);
+  const liveClass = tuesdayEntries.find((e) => (e.startTime || e.start_time) <= '10:30:00' && (e.endTime || e.end_time) >= '10:00:00') || (tuesdayEntries.length > 0 ? tuesdayEntries[0] : null);
 
   // 2. NEXT: next class, upcoming assignment, upcoming exam, immediate item
-  const nextClass = tuesdayEntries.find((e) => (e.startTime || '') > '10:30:00') || (tuesdayEntries.length > 1 ? tuesdayEntries[1] : null);
+  const nextClass = tuesdayEntries.find((e) => ((e.startTime || e.start_time) || '') > '10:30:00') || (tuesdayEntries.length > 1 ? tuesdayEntries[1] : null);
 
   const urgentAssignment = (assignments || []).find((a) => !a.completed && (a.urgency === 'urgent' || a.urgency === 'important')) || (assignments || []).find((a) => !a.completed);
   const nextExam = examSessions && examSessions.length > 0 ? examSessions[0] : null;
@@ -589,10 +589,10 @@ export default function StudentDashboard() {
               {(timetableEntries || []).slice(0, 3).map((cls) => (
                 <div key={cls.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-                    {cls.courseCode}: {cls.subjectName}
+                    {cls.courseCode || cls.course_code || 'Course'}: {cls.subjectName || cls.subject_name || 'Subject'}
                   </span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                    {cls.dayOfWeek.substring(0, 3)} {cls.startTime?.substring(0, 5)}
+                    {(cls.dayOfWeek || cls.day_of_week || '').substring(0, 3)} {(cls.startTime || cls.start_time || '').substring(0, 5)}
                   </span>
                 </div>
               ))}
@@ -608,13 +608,13 @@ export default function StudentDashboard() {
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              {assignments.slice(0, 3).map((asg) => (
+              {(assignments || []).slice(0, 3).map((asg) => (
                 <div key={asg.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
                     {asg.title}
                   </span>
                   <span style={{ fontSize: '0.6875rem', color: asg.completed ? 'var(--state-success)' : 'var(--text-muted)', fontWeight: asg.completed ? 700 : 400 }}>
-                    {asg.completed ? 'Done' : asg.dueFormatted.split('·')[0]}
+                    {asg.completed ? 'Done' : (asg.dueFormatted || asg.due_date || 'Upcoming').split('·')[0]}
                   </span>
                 </div>
               ))}
@@ -633,10 +633,10 @@ export default function StudentDashboard() {
               {(examSessions || []).slice(0, 3).map((ex) => (
                 <div key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-                    {ex.code}: {ex.subject}
+                    {ex.code || ex.subject_code || 'EXAM'}: {ex.subject || ex.subject_name || 'Paper'}
                   </span>
                   <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {ex.dateFormatted}
+                    {ex.dateFormatted || ex.exam_date || ex.date || 'Scheduled'}
                   </span>
                 </div>
               ))}

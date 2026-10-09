@@ -10,6 +10,7 @@ import {
   UserX,
   Mail,
   Building,
+  Edit2,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, SectionHeader, DataTable, EmptyState } from '../../workspace';
@@ -18,16 +19,26 @@ export default function AdminUsers() {
   const {
     systemUsers,
     createUser,
+    updateUser,
     toggleUserStatus,
     showToast,
   } = useNivara();
 
   const [addUserModal, setAddUserModal] = useState(false);
+  const [editUserModal, setEditUserModal] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
 
   const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    role: 'student',
+    dept: 'AI & Data Science',
+  });
+
+  const [editUserFormData, setEditUserFormData] = useState({
+    id: '',
     name: '',
     email: '',
     role: 'student',
@@ -59,15 +70,11 @@ export default function AdminUsers() {
   const handleCreateUserSubmit = (e) => {
     e.preventDefault();
     if (!userFormData.name.trim() || !userFormData.email.trim()) {
-      showToast('Please provide both full name and valid institutional email', 'error');
+      showToast('Please provide user name and institutional email', 'error');
       return;
     }
-    if (!validRoles.includes(userFormData.role)) {
-      showToast('Invalid role specified. Must be one of 8 canonical roles.', 'error');
-      return;
-    }
+
     createUser(userFormData);
-    showToast(`User ${userFormData.name} (${userFormData.role.toUpperCase()}) enrolled successfully ✓`, 'success');
     setAddUserModal(false);
     setUserFormData({
       name: '',
@@ -77,19 +84,39 @@ export default function AdminUsers() {
     });
   };
 
+  const handleOpenEdit = (u) => {
+    setEditUserFormData({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      dept: u.dept || 'General Administration',
+    });
+    setEditUserModal(true);
+  };
+
+  const handleEditUserSubmit = (e) => {
+    e.preventDefault();
+    updateUser(editUserFormData.id, {
+      name: editUserFormData.name,
+      email: editUserFormData.email,
+      role: editUserFormData.role,
+      dept: editUserFormData.dept,
+    });
+    setEditUserModal(false);
+  };
+
   const handleToggle = (id, currentStatus, name) => {
     toggleUserStatus(id);
-    const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';
-    showToast(`User account ${name} is now ${nextStatus} ✓`, 'info');
   };
 
   return (
     <div className="workspace-dense" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* 1. Header */}
       <PageHeader
-        eyebrow="Security & RBAC Administration · Identity Directorate"
-        title="Users & Role-Based Access Control (RBAC)"
-        description="Provision institutional identities, assign canonical application roles, and control active authentication access across all 8 personas."
+        eyebrow="Identity & Access Governance · Multi-Role Security Directory"
+        title="Institutional Users & Role Matrix"
+        description="Comprehensive directory of institutional users across all 8 canonical personas. Govern active access permissions and account states."
         actions={[
           <button
             key="add-user"
@@ -97,12 +124,12 @@ export default function AdminUsers() {
             className="btn btn-primary btn-sm"
             onClick={() => setAddUserModal(true)}
           >
-            <Plus size={13} /> Enroll New Identity
+            <Plus size={13} /> Enroll User Identity
           </button>,
         ]}
       />
 
-      {/* 2. Filters & Search Bar */}
+      {/* 2. Search & Filters Bar */}
       <div
         style={{
           display: 'flex',
@@ -117,11 +144,11 @@ export default function AdminUsers() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '260px' }}>
+          <div style={{ position: 'relative', width: '280px' }}>
             <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Search users by name or email..."
+              placeholder="Search user name or email..."
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
               style={{
@@ -224,17 +251,27 @@ export default function AdminUsers() {
           },
           {
             key: 'actions',
-            label: 'Action',
+            label: 'Actions',
             align: 'right',
-            width: '130px',
+            width: '170px',
             render: (u) => (
-              <button
-                type="button"
-                className={`btn ${u.status === 'active' ? 'btn-secondary' : 'btn-primary'} btn-sm`}
-                onClick={() => handleToggle(u.id, u.status, u.name)}
-              >
-                {u.status === 'active' ? 'Suspend' : 'Activate'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-xs"
+                  onClick={() => handleOpenEdit(u)}
+                  title="Edit User"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${u.status === 'active' ? 'btn-ghost' : 'btn-primary'} btn-xs`}
+                  onClick={() => handleToggle(u.id, u.status, u.name)}
+                >
+                  {u.status === 'active' ? 'Suspend' : 'Activate'}
+                </button>
+              </div>
             ),
           },
         ]}
@@ -327,6 +364,92 @@ export default function AdminUsers() {
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
                   Enroll Identity
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Edit User Modal */}
+      {editUserModal && (
+        <div className="modal-backdrop" onClick={() => setEditUserModal(false)} role="dialog" aria-modal="true">
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit2 size={18} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Edit User Identity
+                </h3>
+              </div>
+              <button type="button" onClick={() => setEditUserModal(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+            </div>
+
+            <form onSubmit={handleEditUserSubmit} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={editUserFormData.name}
+                  onChange={(e) => setEditUserFormData({ ...editUserFormData, name: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={editUserFormData.email}
+                  onChange={(e) => setEditUserFormData({ ...editUserFormData, email: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                    Assigned Canonical Role
+                  </label>
+                  <select
+                    value={editUserFormData.role}
+                    onChange={(e) => setEditUserFormData({ ...editUserFormData, role: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  >
+                    {validRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {r.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                    Department Division
+                  </label>
+                  <input
+                    type="text"
+                    value={editUserFormData.dept}
+                    onChange={(e) => setEditUserFormData({ ...editUserFormData, dept: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditUserModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Save Changes
                 </button>
               </div>
             </form>

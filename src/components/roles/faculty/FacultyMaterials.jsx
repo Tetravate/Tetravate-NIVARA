@@ -5,6 +5,7 @@ import {
   Download,
   Search,
   HardDrive,
+  Trash2,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, MetricStrip, SectionHeader, EmptyState } from '../../workspace';
@@ -13,6 +14,7 @@ export default function FacultyMaterials() {
   const {
     courseMaterials,
     uploadCourseMaterial,
+    deleteCourseMaterial,
     currentUser,
     coursesAttendance,
     showToast,
@@ -126,6 +128,12 @@ export default function FacultyMaterials() {
 
   const handleDownload = (material) => {
     showToast(`Downloading: ${material.title} (${material.fileName || 'file.pdf'}) ✓`, 'info');
+  };
+
+  const handleDeleteMaterial = async (material) => {
+    if (window.confirm(`Are you sure you want to delete course resource "${material.title}"?`)) {
+      await deleteCourseMaterial(material.id);
+    }
   };
 
   return (
@@ -298,6 +306,14 @@ export default function FacultyMaterials() {
                   onClick={() => handleDownload(mat)}
                 >
                   <Download size={12} /> Download
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm text-danger"
+                  onClick={() => handleDeleteMaterial(mat)}
+                  title="Delete Resource"
+                >
+                  <Trash2 size={12} />
                 </button>
               </div>
             </div>

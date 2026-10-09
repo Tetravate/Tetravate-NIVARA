@@ -67,8 +67,8 @@ export default function TodayTimeline({ onBack }) {
 
   // Filter entries for the selected day and sort chronologically by startTime
   const dayClasses = (timetableEntries || [])
-    .filter((entry) => entry.dayOfWeek === selectedDay)
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    .filter((entry) => (entry.dayOfWeek || entry.day_of_week) === selectedDay)
+    .sort((a, b) => ((a.startTime || a.start_time) || '').localeCompare((b.startTime || b.start_time) || ''));
 
   // Build the chronological schedule stream with lunch and free intervals
   const enrichedStream = [];

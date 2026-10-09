@@ -1,20 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BookOpen,
   Plus,
   Search,
+  Edit2,
+  Archive,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, DataTable } from '../../workspace';
 
 export default function AdminPrograms() {
-  const { departments, showToast } = useNivara();
+  const { departments, programs, createProgram, updateProgram, deleteProgram, showToast } = useNivara();
 
   const [addProgramModal, setAddProgramModal] = useState(false);
+  const [editProgramModal, setEditProgramModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Canonical programs derived dynamically from departments
-  const [programsList, setProgramsList] = useState(() => {
+  const programsList = useMemo(() => {
+    if (programs && programs.length > 0) {
+      return programs.map((p) => {
+        const d = (departments || []).find((dept) => dept.code === p.dept_code || dept.code === p.deptCode);
+        return {
+          id: p.id || `PRG-${p.code}`,
+          code: p.code,
+          name: p.name,
+          deptCode: p.dept_code || p.deptCode || (d ? d.code : 'GEN'),
+          deptName: d ? d.name : (p.dept_name || 'Engineering'),
+          duration: p.duration || '4 Years (8 Semesters)',
+          degree: p.degree || 'Undergraduate',
+          intake: p.intake || 60,
+          status: p.status || 'active',
+        };
+      });
+    }
+    // Fallback if no database programs exist yet
     return (departments || []).map((d) => ({
       id: `PRG-BTECH-${d.code}`,
       code: `BTECH-${d.code}`,
@@ -26,9 +45,18 @@ export default function AdminPrograms() {
       intake: d.studentCount || 60,
       status: 'active',
     }));
-  });
+  }, [departments, programs]);
 
   const [programForm, setProgramForm] = useState({
+    code: '',
+    name: '',
+    deptCode: 'AIDS',
+    duration: '4 Years (8 Semesters)',
+    degree: 'Undergraduate',
+    intake: 60,
+  });
+
+  const [editProgramForm, setEditProgramForm] = useState({
     code: '',
     name: '',
     deptCode: 'AIDS',
@@ -46,7 +74,7 @@ export default function AdminPrograms() {
     );
   });
 
-  const handleAddProgram = (e) => {
+  const handleAddProgram = async (e) => {
     e.preventDefault();
     if (!programForm.name.trim() || !programForm.code.trim()) {
       showToast('Please provide program title and code', 'error');
@@ -55,14 +83,17 @@ export default function AdminPrograms() {
 
     const d = (departments || []).find((dept) => dept.code === programForm.deptCode);
     const newProg = {
-      id: `PRG-${programForm.code}`,
-      ...programForm,
+      code: programForm.code.toUpperCase(),
+      name: programForm.name,
+      dept_code: programForm.deptCode,
+      degree: programForm.degree,
+      duration: programForm.duration,
+      intake: Number(programForm.intake) || 60,
       deptName: d ? d.name : 'Engineering',
       status: 'active',
     };
 
-    setProgramsList([newProg, ...programsList]);
-    showToast(`Degree Program ${programForm.name} instituted successfully ✓`, 'success');
+    await createProgram(newProg);
     setAddProgramModal(false);
     setProgramForm({
       code: '',
@@ -72,6 +103,41 @@ export default function AdminPrograms() {
       degree: 'Undergraduate',
       intake: 60,
     });
+  };
+
+  const handleOpenEdit = (p) => {
+    setEditProgramForm({
+      code: p.code,
+      name: p.name,
+      deptCode: p.deptCode || 'AIDS',
+      duration: p.duration || '4 Years (8 Semesters)',
+      degree: p.degree || 'Undergraduate',
+      intake: p.intake || 60,
+    });
+    setEditProgramModal(true);
+  };
+
+  const handleEditProgramSubmit = async (e) => {
+    e.preventDefault();
+    if (!editProgramForm.name.trim()) {
+      showToast('Program title is required', 'error');
+      return;
+    }
+
+    await updateProgram(editProgramForm.code, {
+      name: editProgramForm.name,
+      dept_code: editProgramForm.deptCode,
+      degree: editProgramForm.degree,
+      duration: editProgramForm.duration,
+      intake: Number(editProgramForm.intake) || 60,
+    });
+    setEditProgramModal(false);
+  };
+
+  const handleArchiveProgram = async (p) => {
+    if (window.confirm(`Are you sure you want to archive Program ${p.name} (${p.code})? Historical records remain preserved.`)) {
+      await deleteProgram(p.code);
+    }
   };
 
   return (
@@ -111,7 +177,7 @@ export default function AdminPrograms() {
           <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
-            placeholder="Search programs, code, or degree..."
+            placeholder="Search program, code, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -172,6 +238,31 @@ export default function AdminPrograms() {
             key: 'status',
             label: 'Regulatory Standing',
             render: () => <span className="badge badge-success">Accredited</span>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            align: 'right',
+            render: (p) => (
+              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-xs"
+                  onClick={() => handleOpenEdit(p)}
+                  title="Edit Program"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs text-danger"
+                  onClick={() => handleArchiveProgram(p)}
+                  title="Archive Program"
+                >
+                  <Archive size={12} /> Archive
+                </button>
+              </div>
+            ),
           },
         ]}
         data={filteredPrograms}
@@ -270,6 +361,90 @@ export default function AdminPrograms() {
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
                   Institute Program
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Edit Program Modal */}
+      {editProgramModal && (
+        <div className="modal-backdrop" onClick={() => setEditProgramModal(false)} role="dialog" aria-modal="true">
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit2 size={16} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Edit Degree Program ({editProgramForm.code})
+                </h3>
+              </div>
+              <button type="button" onClick={() => setEditProgramModal(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+            </div>
+
+            <form onSubmit={handleEditProgramSubmit} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                  Full Degree Program Title
+                </label>
+                <input
+                  type="text"
+                  value={editProgramForm.name}
+                  onChange={(e) => setEditProgramForm({ ...editProgramForm, name: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Degree Level</label>
+                  <select
+                    value={editProgramForm.degree}
+                    onChange={(e) => setEditProgramForm({ ...editProgramForm, degree: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  >
+                    <option value="Undergraduate">Undergraduate (UG)</option>
+                    <option value="Postgraduate">Postgraduate (PG)</option>
+                    <option value="Doctoral">Doctoral (Ph.D)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Annual Intake</label>
+                  <input
+                    type="number"
+                    value={editProgramForm.intake}
+                    onChange={(e) => setEditProgramForm({ ...editProgramForm, intake: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                  Governing Department
+                </label>
+                <select
+                  value={editProgramForm.deptCode}
+                  onChange={(e) => setEditProgramForm({ ...editProgramForm, deptCode: e.target.value })}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                >
+                  {(departments || []).map((d) => (
+                    <option key={d.code} value={d.code}>
+                      {d.name} ({d.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditProgramModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Save Changes
                 </button>
               </div>
             </form>

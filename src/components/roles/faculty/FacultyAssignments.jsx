@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   Search,
   AlertCircle,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
 import { PageHeader, MetricStrip, EmptyState } from '../../workspace';
@@ -13,6 +15,8 @@ export default function FacultyAssignments() {
   const {
     assignments,
     createAssignment,
+    updateAssignment,
+    deleteAssignment,
     gradeStudentSubmission,
     currentUser,
     showToast,
@@ -31,6 +35,16 @@ export default function FacultyAssignments() {
     dueFormatted: 'Next Tuesday · 11:59 PM',
     dueTimestamp: '2026-10-14T23:59:00',
     weightage: '10% of Internal Mark',
+    brief: '',
+  });
+
+  // Edit Assignment Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    title: '',
+    dueFormatted: '',
+    weightage: '',
     brief: '',
   });
 
@@ -120,6 +134,38 @@ export default function FacultyAssignments() {
       weightage: '10% of Internal Mark',
       brief: '',
     });
+  };
+
+  const handleOpenEdit = (asg) => {
+    setEditFormData({
+      id: asg.id,
+      title: asg.title,
+      dueFormatted: asg.dueFormatted || '',
+      weightage: asg.weightage || '',
+      brief: asg.brief || '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editFormData.title.trim()) {
+      showToast('Assignment title cannot be empty', 'error');
+      return;
+    }
+    await updateAssignment(editFormData.id, {
+      title: editFormData.title,
+      dueFormatted: editFormData.dueFormatted,
+      weightage: editFormData.weightage,
+      brief: editFormData.brief,
+    });
+    setEditModalOpen(false);
+  };
+
+  const handleDeleteAssignment = async (asg) => {
+    if (window.confirm(`Are you sure you want to archive assignment "${asg.title}"? Submissions will remain preserved.`)) {
+      await deleteAssignment(asg.id);
+    }
   };
 
   const handleOpenGrading = (asg, sub) => {
@@ -309,15 +355,33 @@ export default function FacultyAssignments() {
                     </div>
                   </div>
 
-                  {asg.submissions && asg.submissions.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    {asg.submissions && asg.submissions.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenGrading(asg, asg.submissions[0])}
+                      >
+                        <Award size={13} /> Open Grading Sheet
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => handleOpenGrading(asg, asg.submissions[0])}
+                      onClick={() => handleOpenEdit(asg)}
+                      title="Edit Assignment"
                     >
-                      <Award size={13} /> Open Grading Sheet
+                      <Edit2 size={13} /> Edit
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm text-danger"
+                      onClick={() => handleDeleteAssignment(asg)}
+                      title="Archive Assignment"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Brief description */}
@@ -621,6 +685,88 @@ export default function FacultyAssignments() {
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
                   Save & Notify Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Edit Assignment Modal */}
+      {editModalOpen && (
+        <div className="modal-backdrop" onClick={() => setEditModalOpen(false)} role="dialog" aria-modal="true">
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit2 size={16} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Edit Assignment Deliverable
+                </h3>
+              </div>
+              <button type="button" onClick={() => setEditModalOpen(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                  Deliverable Title
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-canvas)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                    Submission Deadline
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.dueFormatted}
+                    onChange={(e) => setEditFormData({ ...editFormData, dueFormatted: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-canvas)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                    Internal Weightage
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.weightage}
+                    onChange={(e) => setEditFormData({ ...editFormData, weightage: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-canvas)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                  Problem Brief & Instructions
+                </label>
+                <textarea
+                  rows="3"
+                  value={editFormData.brief}
+                  onChange={(e) => setEditFormData({ ...editFormData, brief: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-strong)', background: 'var(--bg-canvas)', color: 'var(--text-primary)', fontSize: '0.8125rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Save Changes
                 </button>
               </div>
             </form>

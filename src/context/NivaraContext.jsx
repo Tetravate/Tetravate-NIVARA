@@ -469,6 +469,18 @@ export function NivaraProvider({ children }) {
   // 21. Multi-Tier Announcements
   const [announcements, setAnnouncements] = useState(() => getStoredOrFallback('announcements', []));
 
+  // 22. Degree Programs Master
+  const [programs, setPrograms] = useState(() => getStoredOrFallback('programs', []));
+
+  // 23. Class Sections Master
+  const [classSections, setClassSections] = useState(() => getStoredOrFallback('classSections', []));
+
+  // 24. Curriculum Courses Master
+  const [coursesMaster, setCoursesMaster] = useState(() => getStoredOrFallback('coursesMaster', []));
+
+  // 25. Academic Years Master
+  const [academicYears, setAcademicYears] = useState(() => getStoredOrFallback('academicYears', []));
+
   // -------------------------------------------------------------
   // SUPABASE AS PRIMARY PRODUCTION SOURCE OF TRUTH
   // Hydrates live records asynchronously into state when Supabase is configured.
@@ -509,6 +521,11 @@ export function NivaraProvider({ children }) {
           announcementsRes,
           auditRes,
           notifsRes,
+          facultyRes,
+          programsRes,
+          sectionsRes,
+          coursesRes,
+          yearsRes,
         ] = await Promise.all([
           dataService.getStudents([]),
           dataService.getDepartments([]),
@@ -532,12 +549,18 @@ export function NivaraProvider({ children }) {
           dataService.getAnnouncements([]),
           dataService.getAuditLogs([]),
           dataService.getNotifications([]),
+          dataService.getFaculty([]),
+          dataService.getPrograms([]),
+          dataService.getClassSections([]),
+          dataService.getCourses([]),
+          dataService.getAcademicYears([]),
         ]);
 
         if (!isMounted) return;
 
         // When Supabase query succeeds, assign remote records (including empty arrays)
         if (studentsRes.success && studentsRes.data !== null) setStudents(studentsRes.data);
+        if (facultyRes.success && facultyRes.data !== null) setFacultyMembers(facultyRes.data);
         if (departmentsRes.success && departmentsRes.data !== null) setDepartments(departmentsRes.data);
         if (assignmentsRes.success && assignmentsRes.data !== null) setAssignments(assignmentsRes.data);
         if (marksRes.success && marksRes.data !== null) setInternalMarks(marksRes.data);
@@ -559,8 +582,12 @@ export function NivaraProvider({ children }) {
         if (announcementsRes.success && announcementsRes.data !== null) setAnnouncements(announcementsRes.data);
         if (auditRes.success && auditRes.data !== null) setAuditLogs(auditRes.data);
         if (notifsRes.success && notifsRes.data !== null) setNotifications(notifsRes.data);
+        if (programsRes.success && programsRes.data !== null) setPrograms(programsRes.data);
+        if (sectionsRes.success && sectionsRes.data !== null) setClassSections(sectionsRes.data);
+        if (coursesRes.success && coursesRes.data !== null) setCoursesMaster(coursesRes.data);
+        if (yearsRes.success && yearsRes.data !== null) setAcademicYears(yearsRes.data);
 
-        const errorItem = [studentsRes, departmentsRes, assignmentsRes, feesRes].find((r) => !r.success);
+        const errorItem = [studentsRes, departmentsRes, assignmentsRes, feesRes, programsRes, sectionsRes, coursesRes, yearsRes].find((r) => !r.success);
         if (errorItem) {
           setDataFetchError(errorItem.error);
         }
@@ -696,23 +723,35 @@ export function NivaraProvider({ children }) {
             });
           } else if (payload?.table === 'timetable_entries') {
             dataService.getTimetableEntries(timetableEntries).then((res) => {
-              if (res) setTimetableEntries(res);
+              if (res && res.data) setTimetableEntries(res.data);
             });
           } else if (payload?.table === 'course_materials') {
             dataService.getCourseMaterials(courseMaterials).then((res) => {
-              if (res) setCourseMaterials(res);
+              if (res && res.data) setCourseMaterials(res.data);
             });
           } else if (payload?.table === 'revaluation_requests') {
             dataService.getRevaluationRequests(revaluationRequests).then((res) => {
-              if (res) setRevaluationRequests(res);
+              if (res && res.data) setRevaluationRequests(res.data);
             });
           } else if (payload?.table === 'fee_concessions') {
             dataService.getFeeConcessions(feeConcessions).then((res) => {
-              if (res) setFeeConcessions(res);
+              if (res && res.data) setFeeConcessions(res.data);
+            });
+          } else if (payload?.table === 'students') {
+            dataService.getStudents().then((res) => {
+              if (res && res.data) setStudents(res.data);
+            });
+          } else if (payload?.table === 'faculty') {
+            dataService.getFaculty().then((res) => {
+              if (res && res.data) setFacultyMembers(res.data);
+            });
+          } else if (payload?.table === 'departments') {
+            dataService.getDepartments().then((res) => {
+              if (res && res.data) setDepartments(res.data);
             });
           } else if (payload?.table === 'announcements') {
             dataService.getAnnouncements(announcements).then((res) => {
-              if (res) setAnnouncements(res);
+              if (res && res.data) setAnnouncements(res.data);
             });
           }
         }
@@ -1045,6 +1084,22 @@ export function NivaraProvider({ children }) {
     broadcastSync('SYNC_ASSIGNMENTS', { assignments: updatedAssignments });
   };
 
+  const updateAssignment = async (id, updates) => {
+    const updatedAssignments = assignments.map((a) => (a.id === id ? { ...a, ...updates } : a));
+    setAssignments(updatedAssignments);
+    await dataService.updateAssignment(id, updates);
+    broadcastSync('SYNC_ASSIGNMENTS', { assignments: updatedAssignments });
+    showToast('Assignment updated successfully ✓', 'success');
+  };
+
+  const deleteAssignment = async (id) => {
+    const updatedAssignments = assignments.filter((a) => a.id !== id);
+    setAssignments(updatedAssignments);
+    await dataService.deleteAssignment(id);
+    broadcastSync('SYNC_ASSIGNMENTS', { assignments: updatedAssignments });
+    showToast('Assignment archived/deleted successfully ✓', 'info');
+  };
+
   // WORKFLOW 3: LEAVE REQUEST & HOD ATTENDANCE CONCESSION
   const submitLeaveRequest = (leaveData) => {
     const activeStudentId = currentUser?.studentId || currentUser?.id || '';
@@ -1176,6 +1231,8 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
       notifications: updatedNotifications,
     });
+
+    dataService.updateLeaveStatus(leaveId, approved ? 'approved' : 'rejected', currentUser?.userName ? `${currentUser.userName} (HOD)` : 'Head of Department', approved);
 
     showToast(
       approved ? 'Duty leave approved with attendance waiver ✓' : 'Leave request declined',
@@ -1348,6 +1405,8 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
     });
 
+    dataService.createFeeStructure(newFee);
+
     showToast(`New fee obligation "${newFee.name}" created ✓`, 'success');
     return newFee;
   };
@@ -1372,6 +1431,7 @@ export function NivaraProvider({ children }) {
       feeStructures: updated,
       auditLogs: updatedAuditLogs,
     });
+    dataService.updateFeeStructure(id, updates);
     showToast(`Fee schedule "${target?.name || id}" updated ✓`, 'success');
   };
 
@@ -1395,6 +1455,7 @@ export function NivaraProvider({ children }) {
       feeStructures: updated,
       auditLogs: updatedAuditLogs,
     });
+    dataService.deleteFeeStructure(id);
     showToast(`Fee schedule "${target?.name || id}" retired ✓`, 'info');
   };
 
@@ -2019,6 +2080,8 @@ export function NivaraProvider({ children }) {
       notifications: updatedNotifications,
     });
 
+    dataService.upsertInternalMarks(courseCode, updatedMarks.filter((m) => m.courseCode === courseCode), lock);
+
     showToast(
       lock ? `CIA marks for ${courseCode} locked and submitted to Exam Cell ✓` : `CIA marks draft saved ✓`,
       'success'
@@ -2064,6 +2127,8 @@ export function NivaraProvider({ children }) {
       notifications: updatedNotifications,
     });
 
+    dataService.publishResults(updatedResults);
+
     showToast('Semester examination results officially published ✓', 'success');
   };
 
@@ -2096,6 +2161,8 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
     });
 
+    dataService.addExamSession(newSession);
+
     showToast(`Exam session for ${newSession.code} successfully scheduled ✓`, 'success');
     return newSession;
   };
@@ -2121,6 +2188,8 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
     });
 
+    dataService.updateExamSession(id, updates);
+
     showToast(`Exam session ${target?.code || ''} updated ✓`, 'success');
   };
 
@@ -2144,6 +2213,8 @@ export function NivaraProvider({ children }) {
       examSessions: updated,
       auditLogs: updatedAuditLogs,
     });
+
+    dataService.deleteExamSession(id);
 
     showToast(`Exam session ${target?.code || ''} cancelled ✓`, 'info');
   };
@@ -2177,6 +2248,8 @@ export function NivaraProvider({ children }) {
       internalMarks: updatedMarks,
       auditLogs: updatedAuditLogs,
     });
+
+    dataService.upsertInternalMarks(courseCode, updatedMarks.filter((m) => m.courseCode === courseCode), lockState);
 
     showToast(
       lockState ? `CIA assessment for ${courseCode} locked ✓` : `CIA assessment for ${courseCode} unlocked ✓`,
@@ -2279,7 +2352,85 @@ export function NivaraProvider({ children }) {
     broadcastSync('SYNC_ADMIN', { systemUsers: updatedUsers });
   };
 
-  const createDepartment = (deptData) => {
+  const createStudent = async (studentData) => {
+    const res = await dataService.createStudent(studentData);
+    if (res.success) {
+      const created = res.data || studentData;
+      setStudents((prev) => [created, ...(prev || []).filter((s) => s.id !== created.id)]);
+      broadcastSync('SYNC_ADMIN', { students: [created, ...(students || [])] });
+      return { success: true, data: created };
+    } else {
+      showToast(`Error enrolling student: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteStudent = async (studentId) => {
+    const res = await dataService.deleteStudent(studentId);
+    if (res.success) {
+      setStudents((prev) => (prev || []).filter((s) => s.id !== studentId));
+      broadcastSync('SYNC_ADMIN', { students: (students || []).filter((s) => s.id !== studentId) });
+      return { success: true };
+    } else {
+      showToast(`Error deleting student: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createFacultyMember = async (facultyData) => {
+    const res = await dataService.createFaculty(facultyData);
+    if (res.success) {
+      const created = res.data || facultyData;
+      setFacultyMembers((prev) => [created, ...(prev || []).filter((f) => f.id !== created.id)]);
+      broadcastSync('SYNC_ADMIN', { facultyMembers: [created, ...(facultyMembers || [])] });
+      return { success: true, data: created };
+    } else {
+      showToast(`Error adding faculty: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateStudent = async (studentId, updates) => {
+    const res = await dataService.updateStudent(studentId, updates);
+    if (res.success) {
+      setStudents((prev) => (prev || []).map((s) => (s.id === studentId ? { ...s, ...updates } : s)));
+      broadcastSync('SYNC_ADMIN', { students: (students || []).map((s) => (s.id === studentId ? { ...s, ...updates } : s)) });
+      showToast('Student record updated successfully ✓', 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating student: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateFacultyMember = async (facultyId, updates) => {
+    const res = await dataService.updateFaculty(facultyId, updates);
+    if (res.success) {
+      setFacultyMembers((prev) => (prev || []).map((f) => (f.id === facultyId ? { ...f, ...updates } : f)));
+      broadcastSync('SYNC_ADMIN', { facultyMembers: (facultyMembers || []).map((f) => (f.id === facultyId ? { ...f, ...updates } : f)) });
+      showToast('Faculty record updated successfully ✓', 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating faculty: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteFacultyMember = async (facultyId) => {
+    const res = await dataService.deleteFaculty(facultyId);
+    if (res.success) {
+      setFacultyMembers((prev) => (prev || []).filter((f) => f.id !== facultyId));
+      broadcastSync('SYNC_ADMIN', { facultyMembers: (facultyMembers || []).filter((f) => f.id !== facultyId) });
+      showToast('Faculty record removed successfully ✓', 'info');
+      return { success: true };
+    } else {
+      showToast(`Error deleting faculty: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createDepartment = async (deptData) => {
+    const res = await dataService.createDepartment(deptData);
     const newDept = {
       code: deptData.code.toUpperCase(),
       name: deptData.name,
@@ -2295,6 +2446,221 @@ export function NivaraProvider({ children }) {
     setDepartments(updatedDepts);
     broadcastSync('SYNC_ADMIN', { departments: updatedDepts });
     showToast(`Department "${newDept.name}" created successfully ✓`, 'success');
+    return res;
+  };
+
+  const updateDepartment = async (code, deptData) => {
+    const res = await dataService.updateDepartment(code, deptData);
+    if (res.success) {
+      setDepartments((prev) => (prev || []).map((d) => (d.code === code ? { ...d, ...deptData } : d)));
+      broadcastSync('SYNC_ADMIN', { departments: (departments || []).map((d) => (d.code === code ? { ...d, ...deptData } : d)) });
+      showToast(`Department ${code} updated successfully ✓`, 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating department: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteDepartment = async (code) => {
+    const res = await dataService.deleteDepartment(code);
+    if (res.success) {
+      setDepartments((prev) => (prev || []).filter((d) => d.code !== code));
+      broadcastSync('SYNC_ADMIN', { departments: (departments || []).filter((d) => d.code !== code) });
+      showToast(`Department ${code} archived successfully ✓`, 'info');
+      return { success: true };
+    } else {
+      showToast(`Error deleting department: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createProgram = async (progData) => {
+    const res = await dataService.createProgram(progData);
+    if (res.success) {
+      const created = res.data || progData;
+      setPrograms((prev) => [created, ...(prev || []).filter((p) => p.code !== created.code)]);
+      showToast(`Degree Program ${created.name} (${created.code}) created ✓`, 'success');
+      return { success: true, data: created };
+    } else {
+      showToast(`Error creating program: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateProgram = async (code, progData) => {
+    const res = await dataService.updateProgram(code, progData);
+    if (res.success) {
+      setPrograms((prev) => (prev || []).map((p) => (p.code === code ? { ...p, ...progData } : p)));
+      showToast(`Program ${code} updated ✓`, 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating program: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteProgram = async (code) => {
+    const res = await dataService.deleteProgram(code);
+    if (res.success) {
+      setPrograms((prev) => (prev || []).filter((p) => p.code !== code));
+      showToast(`Program ${code} archived ✓`, 'info');
+      return { success: true };
+    } else {
+      showToast(`Error deleting program: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createClassSection = async (sectionData) => {
+    const res = await dataService.createClassSection(sectionData);
+    if (res.success) {
+      const created = res.data || sectionData;
+      setClassSections((prev) => [created, ...(prev || []).filter((s) => s.code !== created.code)]);
+      showToast(`Section ${created.name} (${created.code}) chartered ✓`, 'success');
+      return { success: true, data: created };
+    } else {
+      showToast(`Error creating section: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateClassSection = async (code, sectionData) => {
+    const res = await dataService.updateClassSection(code, sectionData);
+    if (res.success) {
+      setClassSections((prev) => (prev || []).map((s) => (s.code === code ? { ...s, ...sectionData } : s)));
+      showToast(`Section ${code} updated ✓`, 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating section: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteClassSection = async (code) => {
+    const res = await dataService.deleteClassSection(code);
+    if (res.success) {
+      setClassSections((prev) => (prev || []).filter((s) => s.code !== code));
+      showToast(`Section ${code} archived ✓`, 'info');
+      return { success: true };
+    } else {
+      showToast(`Error deleting section: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createCourse = async (courseData) => {
+    const res = await dataService.createCourse(courseData);
+    if (res.success) {
+      const created = res.data || courseData;
+      setCoursesMaster((prev) => [created, ...(prev || []).filter((c) => c.code !== created.code)]);
+      showToast(`Course ${created.name} (${created.code}) added ✓`, 'success');
+      return { success: true, data: created };
+    } else {
+      showToast(`Error creating course: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateCourse = async (code, courseData) => {
+    const res = await dataService.updateCourse(code, courseData);
+    if (res.success) {
+      setCoursesMaster((prev) => (prev || []).map((c) => (c.code === code ? { ...c, ...courseData } : c)));
+      showToast(`Course ${code} updated ✓`, 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating course: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteCourse = async (code) => {
+    const res = await dataService.deleteCourse(code);
+    if (res.success) {
+      setCoursesMaster((prev) => (prev || []).filter((c) => c.code !== code));
+      showToast(`Course ${code} archived ✓`, 'info');
+      return { success: true };
+    } else {
+      showToast(`Error deleting course: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createAcademicYear = async (ayData) => {
+    const res = await dataService.createAcademicYear(ayData);
+    if (res.success) {
+      const created = res.data || ayData;
+      setAcademicYears((prev) => [created, ...(prev || [])]);
+      showToast(`Academic Year ${created.name} created ✓`, 'success');
+      return { success: true, data: created };
+    } else {
+      showToast(`Error creating academic year: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateAcademicYear = async (id, ayData) => {
+    const res = await dataService.updateAcademicYear(id, ayData);
+    if (res.success) {
+      setAcademicYears((prev) => (prev || []).map((ay) => (ay.id === id ? { ...ay, ...ayData } : ay)));
+      showToast('Academic Year updated ✓', 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating academic year: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const setCurrentAcademicYear = async (id) => {
+    const res = await dataService.setCurrentAcademicYear(id);
+    if (res.success) {
+      setAcademicYears((prev) => (prev || []).map((ay) => ({ ...ay, isCurrent: ay.id === id, status: ay.id === id ? 'active' : 'archived' })));
+      showToast('Current Academic Year updated ✓', 'success');
+      return { success: true };
+    } else {
+      showToast(`Error setting current academic year: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const createTimetableEntry = async (entryData) => {
+    const res = await dataService.createTimetableEntry(entryData);
+    if (res.success) {
+      const created = res.data || entryData;
+      setTimetableEntries((prev) => [created, ...(prev || [])]);
+      broadcastSync('SYNC_TIMETABLE', { timetableEntries: [created, ...(timetableEntries || [])] });
+      showToast(`Timetable schedule slot added for ${created.subject || created.course_id || 'course'} ✓`, 'success');
+      return { success: true, data: created };
+    } else {
+      showToast(`Error scheduling slot: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const updateTimetableEntry = async (id, entryData) => {
+    const res = await dataService.updateTimetableEntry(id, entryData);
+    if (res.success) {
+      setTimetableEntries((prev) => (prev || []).map((t) => (t.id === id ? { ...t, ...entryData } : t)));
+      broadcastSync('SYNC_TIMETABLE', { timetableEntries: (timetableEntries || []).map((t) => (t.id === id ? { ...t, ...entryData } : t)) });
+      showToast('Timetable schedule updated ✓', 'success');
+      return { success: true };
+    } else {
+      showToast(`Error updating timetable slot: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
+  };
+
+  const deleteTimetableEntry = async (id) => {
+    const res = await dataService.deleteTimetableEntry(id);
+    if (res.success) {
+      setTimetableEntries((prev) => (prev || []).filter((t) => t.id !== id));
+      broadcastSync('SYNC_TIMETABLE', { timetableEntries: (timetableEntries || []).filter((t) => t.id !== id) });
+      showToast('Timetable schedule slot removed ✓', 'info');
+      return { success: true };
+    } else {
+      showToast(`Error removing slot: ${res.error || 'Database error'}`, 'error');
+      return { success: false, error: res.error };
+    }
   };
 
   const uploadStudyMaterial = (materialData) => {
@@ -2515,7 +2881,16 @@ export function NivaraProvider({ children }) {
       auditLogs: updatedAuditLogs,
       notifications: updatedNotifs,
     });
+    await dataService.uploadCourseMaterial(newMat);
     showToast(`Course material "${newMat.title}" published ✓`, 'success');
+  };
+
+  const deleteCourseMaterial = async (id) => {
+    const updated = courseMaterials.filter((m) => m.id !== id);
+    setCourseMaterials(updated);
+    await dataService.deleteCourseMaterial(id);
+    broadcastSync('SYNC_MATERIALS', { courseMaterials: updated });
+    showToast('Course material deleted ✓', 'info');
   };
 
   // Fee Concession / Scholarship Sanction
@@ -2562,6 +2937,7 @@ export function NivaraProvider({ children }) {
       students: updatedStudents,
       auditLogs: updatedAuditLogs,
     });
+    await dataService.grantFeeConcession(newConc);
     showToast(`Scholarship concession of ₹${newConc.amount.toLocaleString()} granted to ${newConc.studentName} ✓`, 'success');
   };
 
@@ -2687,10 +3063,20 @@ export function NivaraProvider({ children }) {
         setFeeConcessions,
         announcements,
         setAnnouncements,
+        programs,
+        setPrograms,
+        classSections,
+        setClassSections,
+        coursesMaster,
+        setCoursesMaster,
+        academicYears,
+        setAcademicYears,
 
         // Mutators / Actions
         markAttendance,
         createAssignment,
+        updateAssignment,
+        deleteAssignment,
         submitStudentAssignment,
         gradeStudentSubmission,
         toggleAssignmentCompletion,
@@ -2724,9 +3110,33 @@ export function NivaraProvider({ children }) {
         createUser,
         updateUser,
         toggleUserStatus,
+        createStudent,
+        updateStudent,
+        deleteStudent,
+        createFacultyMember,
+        updateFacultyMember,
+        deleteFacultyMember,
         createDepartment,
+        updateDepartment,
+        deleteDepartment,
+        createProgram,
+        updateProgram,
+        deleteProgram,
+        createClassSection,
+        updateClassSection,
+        deleteClassSection,
+        createCourse,
+        updateCourse,
+        deleteCourse,
+        createAcademicYear,
+        updateAcademicYear,
+        setCurrentAcademicYear,
+        createTimetableEntry,
+        updateTimetableEntry,
+        deleteTimetableEntry,
         uploadStudyMaterial,
         uploadCourseMaterial,
+        deleteCourseMaterial,
         submitRevaluationRequest,
         updateRevaluationStatus,
         grantFeeConcession,

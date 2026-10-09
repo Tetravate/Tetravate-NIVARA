@@ -41,8 +41,8 @@ export default function FacultyTodaySchedule({ onBack }) {
   );
 
   const daySessions = facultyEntries
-    .filter((e) => e.dayOfWeek === selectedDay)
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    .filter((e) => (e.dayOfWeek || e.day_of_week) === selectedDay)
+    .sort((a, b) => ((a.startTime || a.start_time) || '').localeCompare((b.startTime || b.start_time) || ''));
 
   // Build the chronological teaching stream with research and lunch windows
   const stream = [];

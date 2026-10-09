@@ -22,13 +22,17 @@ export default function AdminAuditLogs() {
   const filteredLogs = useMemo(() => {
     return (auditLogs || []).filter((log) => {
       const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        (log.details && log.details.toLowerCase().includes(q)) ||
-        (log.description && log.description.toLowerCase().includes(q)) ||
-        (log.user && log.user.toLowerCase().includes(q)) ||
-        (log.action && log.action.toLowerCase().includes(q));
+      const actor = (log.actorName || log.user || '').toLowerCase();
+      const role = (log.actorRole || log.role || '').toLowerCase();
+      const action = (log.action || '').toLowerCase();
+      const details = (log.details || log.description || '').toLowerCase();
 
-      const matchesRole = roleFilter === 'all' || log.role === roleFilter;
+      const matchesSearch =
+        details.includes(q) ||
+        actor.includes(q) ||
+        action.includes(q);
+
+      const matchesRole = roleFilter === 'all' || role === roleFilter.toLowerCase();
       const matchesAction = actionFilter === 'all' || log.action === actionFilter;
 
       return matchesSearch && matchesRole && matchesAction;
@@ -43,8 +47,8 @@ export default function AdminAuditLogs() {
     const rows = filteredLogs.map((l) => [
       `"${l.id}"`,
       `"${l.timestamp || 'N/A'}"`,
-      `"${l.user || 'System'}"`,
-      `"${l.role || 'system'}"`,
+      `"${l.actorName || l.user || 'System'}"`,
+      `"${l.actorRole || l.role || 'system'}"`,
       `"${l.action || 'TRANSACTION'}"`,
       `"${(l.details || l.description || '').replace(/"/g, '""')}"`,
     ]);
@@ -176,9 +180,9 @@ export default function AdminAuditLogs() {
             width: '160px',
             render: (l) => (
               <div>
-                <strong style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>{l.user || 'System'}</strong>
+                <strong style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>{l.actorName || l.user || 'System'}</strong>
                 <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  {l.role || 'System'}
+                  {l.actorRole || l.role || 'System'}
                 </div>
               </div>
             ),
