@@ -264,10 +264,7 @@ export function NivaraProvider({ children }) {
     setAuthenticatedSession(null);
     setCurrentRole('student');
     setActiveTabState('home');
-    window.location.hash = '';
-    if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
-      window.history.replaceState(null, '', window.location.pathname);
-    }
+    window.location.hash = '#/login';
     showToast('Signed out of session safely.', 'info');
   };
 
@@ -291,7 +288,9 @@ export function NivaraProvider({ children }) {
         },
         provider: 'developer_switch',
       };
-      localStorage.setItem('nivara_authenticated_session', JSON.stringify(mockSession));
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.setItem('nivara_authenticated_session', JSON.stringify(mockSession));
+      }
       setAuthenticatedSession(mockSession);
       setCurrentRole(newRole);
       const defaultTab = getDefaultModuleForRole(newRole);
@@ -304,12 +303,23 @@ export function NivaraProvider({ children }) {
   // Route Gate & Authorization Guard: handles direct address bar typing, Back, Forward, and refresh
   useEffect(() => {
     const enforceRouteGate = () => {
+      const hash = window.location.hash || '';
+
+      // 1. If not authenticated, ensure user lands on the login page and not in any dashboard
+      if (!authenticatedSession) {
+        if (hash !== '#/login') {
+          window.location.hash = '#/login';
+        }
+        return;
+      }
+
+      // 2. If authenticated and hash is empty or #/login, route to authorized role home
       const parsed = parseHashRoute();
       const activeRole = authenticatedSession?.user?.role || currentRole;
 
-      if (!parsed) {
-        // Normalize hash if empty or invalid
-        window.location.hash = `#/${activeRole}/${activeTab}`;
+      if (!parsed || hash === '#/login' || hash === '#' || hash === '#/') {
+        const authorizedTab = getDefaultModuleForRole(activeRole);
+        window.location.hash = `#/${activeRole}/${authorizedTab}`;
         return;
       }
 

@@ -160,12 +160,8 @@ export async function loginWithCredentials(email, password, remember = true) {
         provider: 'supabase',
       };
 
-      if (typeof window !== 'undefined') {
-        if (remember && window.localStorage) {
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-        } else if (window.sessionStorage) {
-          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-        }
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
       }
 
       return { success: true, session: sessionObj };
@@ -216,12 +212,8 @@ export async function loginWithCredentials(email, password, remember = true) {
     authenticatedAt: new Date().toISOString(),
   };
 
-  if (typeof window !== 'undefined') {
-    if (remember && window.localStorage) {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-    } else if (window.sessionStorage) {
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
-    }
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionObj));
   }
 
   return { success: true, session: sessionObj };
@@ -229,10 +221,20 @@ export async function loginWithCredentials(email, password, remember = true) {
 
 /**
  * Retrieves the currently active authenticated session.
+ * On root link or login route, defaults to null so visitors always land on Login Page.
  */
 export function getActiveSession() {
   try {
-    const raw = localStorage.getItem(SESSION_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (typeof window === 'undefined') return null;
+    // Clean up any old permanent session left in localStorage
+    if (window.localStorage && window.localStorage.getItem(SESSION_STORAGE_KEY)) {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+    const hash = window.location.hash || '';
+    if (!hash || hash === '#' || hash === '#/' || hash === '#/login') {
+      return null;
+    }
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -251,7 +253,9 @@ export async function logoutSession() {
       // Ignore network errors on signout
     }
   }
-  localStorage.removeItem(SESSION_STORAGE_KEY);
-  sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  if (typeof window !== 'undefined') {
+    if (window.sessionStorage) sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    if (window.localStorage) localStorage.removeItem(SESSION_STORAGE_KEY);
+  }
   return { success: true };
 }
