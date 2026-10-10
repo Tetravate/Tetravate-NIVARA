@@ -10,8 +10,41 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isValidModuleForRole, getDefaultModuleForRole, resolveCanonicalModule } from '../data/navigationConfig';
 import { can } from '../services/permissionService';
 
-const NivaraContext = createContext();
+import {
+  DEMO_DEPARTMENTS,
+  DEMO_PROGRAMS,
+  DEMO_ACADEMIC_YEARS,
+  DEMO_CLASS_SECTIONS,
+  DEMO_COURSES_MASTER,
+  DEMO_STUDENTS,
+  DEMO_FACULTY_MEMBERS,
+  DEMO_COURSES_ATTENDANCE,
+  DEMO_FACULTY_ROSTER,
+  DEMO_ASSIGNMENTS,
+  DEMO_INTERNAL_MARKS,
+  DEMO_EXAM_SESSIONS,
+  DEMO_PUBLISHED_RESULTS,
+  DEMO_REVALUATION_REQUESTS,
+  DEMO_FEE_STRUCTURES,
+  DEMO_PAYMENT_HISTORY,
+  DEMO_REFUND_REQUESTS,
+  DEMO_FEE_CONCESSIONS,
+  DEMO_COMPANIES,
+  DEMO_PLACEMENT_DRIVES,
+  DEMO_PLACEMENT_APPLICATIONS,
+  DEMO_PLACEMENT_INTERVIEWS,
+  DEMO_PLACEMENT_OFFERS,
+  DEMO_LEAVE_REQUESTS,
+  DEMO_TIMETABLE_ENTRIES,
+  DEMO_COURSE_MATERIALS,
+  DEMO_ANNOUNCEMENTS,
+  DEMO_ROOM_CONFLICTS,
+  DEMO_SYSTEM_USERS,
+  DEMO_AUDIT_LOGS,
+  DEMO_NOTIFICATIONS,
+} from '../data/initialDemoData';
 
+const NivaraContext = createContext();
 
 export function useNivara() {
   const context = useContext(NivaraContext);
@@ -22,56 +55,11 @@ export function useNivara() {
 }
 
 const SYNC_CHANNEL_NAME = 'nivara_realtime_sync';
-const STORAGE_CLEANUP_VERSION = 'nivara_v2_clean_runtime';
-
-function purgeLegacyMockStorage() {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    const isCleaned = localStorage.getItem(STORAGE_CLEANUP_VERSION);
-    if (!isCleaned) {
-      const keysToPurge = [
-        'nivara_db_students',
-        'nivara_db_departments',
-        'nivara_db_coursesAttendance',
-        'nivara_db_facultyRoster',
-        'nivara_db_assignments',
-        'nivara_db_internalMarks',
-        'nivara_db_examSessions',
-        'nivara_db_publishedResults',
-        'nivara_db_feeStructures',
-        'nivara_db_paymentHistory',
-        'nivara_db_refundRequests',
-        'nivara_db_companies',
-        'nivara_db_placementDrives',
-        'nivara_db_studentPlacementApplications',
-        'nivara_db_placementInterviews',
-        'nivara_db_placementOffers',
-        'nivara_db_leaveRequests',
-        'nivara_db_auditLogs',
-        'nivara_db_notifications',
-        'nivara_db_facultyMembers',
-        'nivara_db_systemUsers',
-        'nivara_db_roomConflicts',
-        'nivara_db_studyMaterials',
-        'nivara_db_timetableEntries',
-        'nivara_db_courseMaterials',
-        'nivara_db_revaluationRequests',
-        'nivara_db_feeConcessions',
-        'nivara_db_announcements',
-      ];
-      keysToPurge.forEach((k) => localStorage.removeItem(k));
-      localStorage.setItem(STORAGE_CLEANUP_VERSION, 'true');
-    }
-  } catch {
-    // Ignore storage exceptions
-  }
-}
-
-purgeLegacyMockStorage();
+const DEMO_STORAGE_PREFIX = 'nivara_demo_v3_';
 
 function getStoredOrFallback(key, fallback) {
   try {
-    const val = localStorage.getItem(`nivara_db_${key}`);
+    const val = localStorage.getItem(`${DEMO_STORAGE_PREFIX}${key}`);
     return val ? JSON.parse(val) : fallback;
   } catch {
     return fallback;
@@ -80,7 +68,7 @@ function getStoredOrFallback(key, fallback) {
 
 function saveToStorage(key, val) {
   try {
-    localStorage.setItem(`nivara_db_${key}`, JSON.stringify(val));
+    localStorage.setItem(`${DEMO_STORAGE_PREFIX}${key}`, JSON.stringify(val));
   } catch {
     // safe fallback
   }
@@ -293,6 +281,7 @@ export function NivaraProvider({ children }) {
           id: `usr-${targetAccount.role}`,
           email: targetAccount.email,
           role: targetAccount.role,
+          label: targetAccount.label || ROLES.find((r) => r.id === targetAccount.role)?.label || 'Student',
           userName: targetAccount.userName,
           title: targetAccount.title,
           dept: targetAccount.dept,
@@ -374,76 +363,81 @@ export function NivaraProvider({ children }) {
   }, [theme]);
 
   // Current active user metadata
-  const currentUser = authenticatedSession?.user || ROLES.find((r) => r.id === currentRole) || ROLES[0];
+  const currentRoleMeta = ROLES.find((r) => r.id === (authenticatedSession?.user?.role || currentRole)) || ROLES[0];
+  const currentUser = {
+    ...currentRoleMeta,
+    ...(authenticatedSession?.user || {}),
+    label: authenticatedSession?.user?.label || currentRoleMeta?.label || 'Student',
+  };
 
   // -------------------------------------------------------------
-  // CENTRALIZED SHARED DATA STORE (ZERO RUNTIME MOCK DATA)
-  // Authoritative data is loaded asynchronously from Supabase.
-  // Genuine empty database tables ([]) correctly surface empty states.
+  // CENTRALIZED SHARED DATA STORE (ISOLATED DEMO ENVIRONMENT)
+  // Initializes with rich, consistent fictional sample data across all 8 roles.
+  // Persists in isolated storage namespace (nivara_demo_v3_*) and syncs via BroadcastChannel.
   // -------------------------------------------------------------
 
   // 1. Central Student Directory
-  const [students, setStudents] = useState(() => getStoredOrFallback('students', []));
+  const [students, setStudents] = useState(() => getStoredOrFallback('students', DEMO_STUDENTS));
 
   // 2. Department Master Data
-  const [departments, setDepartments] = useState(() => getStoredOrFallback('departments', []));
+  const [departments, setDepartments] = useState(() => getStoredOrFallback('departments', DEMO_DEPARTMENTS));
 
   // 3. Central Attendance Sessions
-  const [coursesAttendance, setCoursesAttendance] = useState(() => getStoredOrFallback('coursesAttendance', []));
+  const [coursesAttendance, setCoursesAttendance] = useState(() => getStoredOrFallback('coursesAttendance', DEMO_COURSES_ATTENDANCE));
 
   // Faculty Class Roster
-  const [facultyRoster, setFacultyRoster] = useState(() => getStoredOrFallback('facultyRoster', []));
+  const [facultyRoster, setFacultyRoster] = useState(() => getStoredOrFallback('facultyRoster', DEMO_FACULTY_ROSTER));
 
   // 4. Assignments & Submissions
-  const [assignments, setAssignments] = useState(() => getStoredOrFallback('assignments', []));
+  const [assignments, setAssignments] = useState(() => getStoredOrFallback('assignments', DEMO_ASSIGNMENTS));
 
   // 5. Internal Assessment Marks
-  const [internalMarks, setInternalMarks] = useState(() => getStoredOrFallback('internalMarks', []));
+  const [internalMarks, setInternalMarks] = useState(() => getStoredOrFallback('internalMarks', DEMO_INTERNAL_MARKS));
 
   // 6. Examination Sessions & Hall Tickets
-  const [examSessions, setExamSessions] = useState(() => getStoredOrFallback('examSessions', []));
+  const [examSessions, setExamSessions] = useState(() => getStoredOrFallback('examSessions', DEMO_EXAM_SESSIONS));
 
-  const [publishedResults, setPublishedResults] = useState(() => getStoredOrFallback('publishedResults', null));
+  const [publishedResults, setPublishedResults] = useState(() => getStoredOrFallback('publishedResults', DEMO_PUBLISHED_RESULTS));
 
   // 7. Finance & Fees
-  const [feeStructures, setFeeStructures] = useState(() => getStoredOrFallback('feeStructures', []));
+  const [feeStructures, setFeeStructures] = useState(() => getStoredOrFallback('feeStructures', DEMO_FEE_STRUCTURES));
 
-  const [paymentHistory, setPaymentHistory] = useState(() => getStoredOrFallback('paymentHistory', []));
+  const [paymentHistory, setPaymentHistory] = useState(() => getStoredOrFallback('paymentHistory', DEMO_PAYMENT_HISTORY));
 
   // 7b. Student Refunds Pipeline
-  const [refundRequests, setRefundRequests] = useState(() => getStoredOrFallback('refundRequests', []));
+  const [refundRequests, setRefundRequests] = useState(() => getStoredOrFallback('refundRequests', DEMO_REFUND_REQUESTS));
 
   // 8. Placement Opportunities, Companies, Applications, Interviews & Offers
-  const [companies, setCompanies] = useState(() => getStoredOrFallback('companies', []));
+  const [companies, setCompanies] = useState(() => getStoredOrFallback('companies', DEMO_COMPANIES));
 
-  const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', []));
+  const [placementDrives, setPlacementDrives] = useState(() => getStoredOrFallback('placementDrives', DEMO_PLACEMENT_DRIVES));
 
-  const [studentPlacementApplications, setStudentPlacementApplications] = useState(() => getStoredOrFallback('studentPlacementApplications', []));
+  const [studentPlacementApplications, setStudentPlacementApplications] = useState(() => getStoredOrFallback('studentPlacementApplications', DEMO_PLACEMENT_APPLICATIONS));
 
-  const [placementInterviews, setPlacementInterviews] = useState(() => getStoredOrFallback('placementInterviews', []));
+  const [placementInterviews, setPlacementInterviews] = useState(() => getStoredOrFallback('placementInterviews', DEMO_PLACEMENT_INTERVIEWS));
 
-  const [placementOffers, setPlacementOffers] = useState(() => getStoredOrFallback('placementOffers', []));
+  const [placementOffers, setPlacementOffers] = useState(() => getStoredOrFallback('placementOffers', DEMO_PLACEMENT_OFFERS));
 
   // 9. Leave Requests
-  const [leaveRequests, setLeaveRequests] = useState(() => getStoredOrFallback('leaveRequests', []));
+  const [leaveRequests, setLeaveRequests] = useState(() => getStoredOrFallback('leaveRequests', DEMO_LEAVE_REQUESTS));
 
   // 10. Audit Activity Trail
-  const [auditLogs, setAuditLogs] = useState(() => getStoredOrFallback('auditLogs', []));
+  const [auditLogs, setAuditLogs] = useState(() => getStoredOrFallback('auditLogs', DEMO_AUDIT_LOGS));
 
   // 11. Cross-Role Shared Notifications
-  const [notifications, setNotifications] = useState(() => getStoredOrFallback('notifications', []));
+  const [notifications, setNotifications] = useState(() => getStoredOrFallback('notifications', DEMO_NOTIFICATIONS));
 
   // 12. Faculty Workload & Department Staff
-  const [facultyMembers, setFacultyMembers] = useState(() => getStoredOrFallback('facultyMembers', []));
+  const [facultyMembers, setFacultyMembers] = useState(() => getStoredOrFallback('facultyMembers', DEMO_FACULTY_MEMBERS));
 
   // 13. System Users
-  const [systemUsers, setSystemUsers] = useState(() => getStoredOrFallback('systemUsers', []));
+  const [systemUsers, setSystemUsers] = useState(() => getStoredOrFallback('systemUsers', DEMO_SYSTEM_USERS));
 
   // 14. Room Conflicts
-  const [roomConflicts, setRoomConflicts] = useState(() => getStoredOrFallback('roomConflicts', []));
+  const [roomConflicts, setRoomConflicts] = useState(() => getStoredOrFallback('roomConflicts', DEMO_ROOM_CONFLICTS));
 
   // 15. Study Materials
-  const [studyMaterials, setStudyMaterials] = useState(() => getStoredOrFallback('studyMaterials', []));
+  const [studyMaterials, setStudyMaterials] = useState(() => getStoredOrFallback('studyMaterials', DEMO_COURSE_MATERIALS));
 
   // 16. System Settings (Standard institutional configuration)
   const [systemSettings, setSystemSettings] = useState(() => getStoredOrFallback('systemSettings', {
@@ -455,31 +449,31 @@ export function NivaraProvider({ children }) {
   }));
 
   // 17. Unified Multi-Role Timetable Entries
-  const [timetableEntries, setTimetableEntries] = useState(() => getStoredOrFallback('timetableEntries', []));
+  const [timetableEntries, setTimetableEntries] = useState(() => getStoredOrFallback('timetableEntries', DEMO_TIMETABLE_ENTRIES));
 
   // 18. Extended Course Materials
-  const [courseMaterials, setCourseMaterials] = useState(() => getStoredOrFallback('courseMaterials', []));
+  const [courseMaterials, setCourseMaterials] = useState(() => getStoredOrFallback('courseMaterials', DEMO_COURSE_MATERIALS));
 
   // 19. Examination Revaluation Pipeline
-  const [revaluationRequests, setRevaluationRequests] = useState(() => getStoredOrFallback('revaluationRequests', []));
+  const [revaluationRequests, setRevaluationRequests] = useState(() => getStoredOrFallback('revaluationRequests', DEMO_REVALUATION_REQUESTS));
 
   // 20. Scholarships & Fee Concessions
-  const [feeConcessions, setFeeConcessions] = useState(() => getStoredOrFallback('feeConcessions', []));
+  const [feeConcessions, setFeeConcessions] = useState(() => getStoredOrFallback('feeConcessions', DEMO_FEE_CONCESSIONS));
 
   // 21. Multi-Tier Announcements
-  const [announcements, setAnnouncements] = useState(() => getStoredOrFallback('announcements', []));
+  const [announcements, setAnnouncements] = useState(() => getStoredOrFallback('announcements', DEMO_ANNOUNCEMENTS));
 
   // 22. Degree Programs Master
-  const [programs, setPrograms] = useState(() => getStoredOrFallback('programs', []));
+  const [programs, setPrograms] = useState(() => getStoredOrFallback('programs', DEMO_PROGRAMS));
 
   // 23. Class Sections Master
-  const [classSections, setClassSections] = useState(() => getStoredOrFallback('classSections', []));
+  const [classSections, setClassSections] = useState(() => getStoredOrFallback('classSections', DEMO_CLASS_SECTIONS));
 
   // 24. Curriculum Courses Master
-  const [coursesMaster, setCoursesMaster] = useState(() => getStoredOrFallback('coursesMaster', []));
+  const [coursesMaster, setCoursesMaster] = useState(() => getStoredOrFallback('coursesMaster', DEMO_COURSES_MASTER));
 
   // 25. Academic Years Master
-  const [academicYears, setAcademicYears] = useState(() => getStoredOrFallback('academicYears', []));
+  const [academicYears, setAcademicYears] = useState(() => getStoredOrFallback('academicYears', DEMO_ACADEMIC_YEARS));
 
   // -------------------------------------------------------------
   // SUPABASE AS PRIMARY PRODUCTION SOURCE OF TRUTH
@@ -558,34 +552,34 @@ export function NivaraProvider({ children }) {
 
         if (!isMounted) return;
 
-        // When Supabase query succeeds, assign remote records (including empty arrays)
-        if (studentsRes.success && studentsRes.data !== null) setStudents(studentsRes.data);
-        if (facultyRes.success && facultyRes.data !== null) setFacultyMembers(facultyRes.data);
-        if (departmentsRes.success && departmentsRes.data !== null) setDepartments(departmentsRes.data);
-        if (assignmentsRes.success && assignmentsRes.data !== null) setAssignments(assignmentsRes.data);
-        if (marksRes.success && marksRes.data !== null) setInternalMarks(marksRes.data);
-        if (examsRes.success && examsRes.data !== null) setExamSessions(examsRes.data);
-        if (resultsRes.success && resultsRes.data !== null) setPublishedResults(resultsRes.data);
-        if (feesRes.success && feesRes.data !== null) setFeeStructures(feesRes.data);
-        if (paymentsRes.success && paymentsRes.data !== null) setPaymentHistory(paymentsRes.data);
-        if (refundsRes.success && refundsRes.data !== null) setRefundRequests(refundsRes.data);
-        if (concessionsRes.success && concessionsRes.data !== null) setFeeConcessions(concessionsRes.data);
-        if (leavesRes.success && leavesRes.data !== null) setLeaveRequests(leavesRes.data);
-        if (companiesRes.success && companiesRes.data !== null) setCompanies(companiesRes.data);
-        if (drivesRes.success && drivesRes.data !== null) setPlacementDrives(drivesRes.data);
-        if (appsRes.success && appsRes.data !== null) setStudentPlacementApplications(appsRes.data);
-        if (interviewsRes.success && interviewsRes.data !== null) setPlacementInterviews(interviewsRes.data);
-        if (offersRes.success && offersRes.data !== null) setPlacementOffers(offersRes.data);
-        if (timetableRes.success && timetableRes.data !== null) setTimetableEntries(timetableRes.data);
-        if (materialsRes.success && materialsRes.data !== null) setCourseMaterials(materialsRes.data);
-        if (revalRes.success && revalRes.data !== null) setRevaluationRequests(revalRes.data);
-        if (announcementsRes.success && announcementsRes.data !== null) setAnnouncements(announcementsRes.data);
-        if (auditRes.success && auditRes.data !== null) setAuditLogs(auditRes.data);
-        if (notifsRes.success && notifsRes.data !== null) setNotifications(notifsRes.data);
-        if (programsRes.success && programsRes.data !== null) setPrograms(programsRes.data);
-        if (sectionsRes.success && sectionsRes.data !== null) setClassSections(sectionsRes.data);
-        if (coursesRes.success && coursesRes.data !== null) setCoursesMaster(coursesRes.data);
-        if (yearsRes.success && yearsRes.data !== null) setAcademicYears(yearsRes.data);
+        // When Supabase query succeeds, assign remote records (preserve demo baseline if empty)
+        if (studentsRes.success && studentsRes.data && studentsRes.data.length > 0) setStudents(studentsRes.data);
+        if (facultyRes.success && facultyRes.data && facultyRes.data.length > 0) setFacultyMembers(facultyRes.data);
+        if (departmentsRes.success && departmentsRes.data && departmentsRes.data.length > 0) setDepartments(departmentsRes.data);
+        if (assignmentsRes.success && assignmentsRes.data && assignmentsRes.data.length > 0) setAssignments(assignmentsRes.data);
+        if (marksRes.success && marksRes.data && marksRes.data.length > 0) setInternalMarks(marksRes.data);
+        if (examsRes.success && examsRes.data && examsRes.data.length > 0) setExamSessions(examsRes.data);
+        if (resultsRes.success && resultsRes.data) setPublishedResults(resultsRes.data);
+        if (feesRes.success && feesRes.data && feesRes.data.length > 0) setFeeStructures(feesRes.data);
+        if (paymentsRes.success && paymentsRes.data && paymentsRes.data.length > 0) setPaymentHistory(paymentsRes.data);
+        if (refundsRes.success && refundsRes.data && refundsRes.data.length > 0) setRefundRequests(refundsRes.data);
+        if (concessionsRes.success && concessionsRes.data && concessionsRes.data.length > 0) setFeeConcessions(concessionsRes.data);
+        if (leavesRes.success && leavesRes.data && leavesRes.data.length > 0) setLeaveRequests(leavesRes.data);
+        if (companiesRes.success && companiesRes.data && companiesRes.data.length > 0) setCompanies(companiesRes.data);
+        if (drivesRes.success && drivesRes.data && drivesRes.data.length > 0) setPlacementDrives(drivesRes.data);
+        if (appsRes.success && appsRes.data && appsRes.data.length > 0) setStudentPlacementApplications(appsRes.data);
+        if (interviewsRes.success && interviewsRes.data && interviewsRes.data.length > 0) setPlacementInterviews(interviewsRes.data);
+        if (offersRes.success && offersRes.data && offersRes.data.length > 0) setPlacementOffers(offersRes.data);
+        if (timetableRes.success && timetableRes.data && timetableRes.data.length > 0) setTimetableEntries(timetableRes.data);
+        if (materialsRes.success && materialsRes.data && materialsRes.data.length > 0) setCourseMaterials(materialsRes.data);
+        if (revalRes.success && revalRes.data && revalRes.data.length > 0) setRevaluationRequests(revalRes.data);
+        if (announcementsRes.success && announcementsRes.data && announcementsRes.data.length > 0) setAnnouncements(announcementsRes.data);
+        if (auditRes.success && auditRes.data && auditRes.data.length > 0) setAuditLogs(auditRes.data);
+        if (notifsRes.success && notifsRes.data && notifsRes.data.length > 0) setNotifications(notifsRes.data);
+        if (programsRes.success && programsRes.data && programsRes.data.length > 0) setPrograms(programsRes.data);
+        if (sectionsRes.success && sectionsRes.data && sectionsRes.data.length > 0) setClassSections(sectionsRes.data);
+        if (coursesRes.success && coursesRes.data && coursesRes.data.length > 0) setCoursesMaster(coursesRes.data);
+        if (yearsRes.success && yearsRes.data && yearsRes.data.length > 0) setAcademicYears(yearsRes.data);
 
         const errorItem = [studentsRes, departmentsRes, assignmentsRes, feesRes, programsRes, sectionsRes, coursesRes, yearsRes].find((r) => !r.success);
         if (errorItem) {
@@ -682,6 +676,40 @@ export function NivaraProvider({ children }) {
         if (data.announcements) setAnnouncements(data.announcements);
         if (data.notifications) setNotifications(data.notifications);
         if (data.auditLogs) setAuditLogs(data.auditLogs);
+      } else if (type === 'SYNC_RESET_DEMO') {
+        setStudents(DEMO_STUDENTS);
+        setDepartments(DEMO_DEPARTMENTS);
+        setCoursesAttendance(DEMO_COURSES_ATTENDANCE);
+        setFacultyRoster(DEMO_FACULTY_ROSTER);
+        setAssignments(DEMO_ASSIGNMENTS);
+        setInternalMarks(DEMO_INTERNAL_MARKS);
+        setExamSessions(DEMO_EXAM_SESSIONS);
+        setPublishedResults(DEMO_PUBLISHED_RESULTS);
+        setFeeStructures(DEMO_FEE_STRUCTURES);
+        setPaymentHistory(DEMO_PAYMENT_HISTORY);
+        setRefundRequests(DEMO_REFUND_REQUESTS);
+        setCompanies(DEMO_COMPANIES);
+        setPlacementDrives(DEMO_PLACEMENT_DRIVES);
+        setStudentPlacementApplications(DEMO_PLACEMENT_APPLICATIONS);
+        setPlacementInterviews(DEMO_PLACEMENT_INTERVIEWS);
+        setPlacementOffers(DEMO_PLACEMENT_OFFERS);
+        setLeaveRequests(DEMO_LEAVE_REQUESTS);
+        setAuditLogs(DEMO_AUDIT_LOGS);
+        setNotifications(DEMO_NOTIFICATIONS);
+        setFacultyMembers(DEMO_FACULTY_MEMBERS);
+        setSystemUsers(DEMO_SYSTEM_USERS);
+        setRoomConflicts(DEMO_ROOM_CONFLICTS);
+        setStudyMaterials(DEMO_COURSE_MATERIALS);
+        setTimetableEntries(DEMO_TIMETABLE_ENTRIES);
+        setCourseMaterials(DEMO_COURSE_MATERIALS);
+        setRevaluationRequests(DEMO_REVALUATION_REQUESTS);
+        setFeeConcessions(DEMO_FEE_CONCESSIONS);
+        setAnnouncements(DEMO_ANNOUNCEMENTS);
+        setPrograms(DEMO_PROGRAMS);
+        setClassSections(DEMO_CLASS_SECTIONS);
+        setCoursesMaster(DEMO_COURSES_MASTER);
+        setAcademicYears(DEMO_ACADEMIC_YEARS);
+        showToast('Demo dataset reset from another tab', 'info');
       }
     };
 
@@ -801,6 +829,64 @@ export function NivaraProvider({ children }) {
   // -------------------------------------------------------------
   // MUTATORS / ACTIONS (CROSS-ROLE SYNCHRONIZATION)
   // -------------------------------------------------------------
+
+  /**
+   * Reset Demo Data
+   * Restores pristine baseline fictional dataset across all 8 roles.
+   * Clears isolated demo storage keys and broadcasts sync across active tabs.
+   */
+  const resetDemoData = () => {
+    const keys = [
+      'students', 'departments', 'coursesAttendance', 'facultyRoster', 'assignments',
+      'internalMarks', 'examSessions', 'publishedResults', 'feeStructures', 'paymentHistory',
+      'refundRequests', 'companies', 'placementDrives', 'studentPlacementApplications',
+      'placementInterviews', 'placementOffers', 'leaveRequests', 'auditLogs', 'notifications',
+      'facultyMembers', 'systemUsers', 'roomConflicts', 'studyMaterials', 'timetableEntries',
+      'courseMaterials', 'revaluationRequests', 'feeConcessions', 'announcements', 'programs',
+      'classSections', 'coursesMaster', 'academicYears'
+    ];
+    keys.forEach((k) => {
+      try {
+        localStorage.removeItem(`${DEMO_STORAGE_PREFIX}${k}`);
+      } catch {}
+    });
+
+    setStudents(DEMO_STUDENTS);
+    setDepartments(DEMO_DEPARTMENTS);
+    setCoursesAttendance(DEMO_COURSES_ATTENDANCE);
+    setFacultyRoster(DEMO_FACULTY_ROSTER);
+    setAssignments(DEMO_ASSIGNMENTS);
+    setInternalMarks(DEMO_INTERNAL_MARKS);
+    setExamSessions(DEMO_EXAM_SESSIONS);
+    setPublishedResults(DEMO_PUBLISHED_RESULTS);
+    setFeeStructures(DEMO_FEE_STRUCTURES);
+    setPaymentHistory(DEMO_PAYMENT_HISTORY);
+    setRefundRequests(DEMO_REFUND_REQUESTS);
+    setCompanies(DEMO_COMPANIES);
+    setPlacementDrives(DEMO_PLACEMENT_DRIVES);
+    setStudentPlacementApplications(DEMO_PLACEMENT_APPLICATIONS);
+    setPlacementInterviews(DEMO_PLACEMENT_INTERVIEWS);
+    setPlacementOffers(DEMO_PLACEMENT_OFFERS);
+    setLeaveRequests(DEMO_LEAVE_REQUESTS);
+    setAuditLogs(DEMO_AUDIT_LOGS);
+    setNotifications(DEMO_NOTIFICATIONS);
+    setFacultyMembers(DEMO_FACULTY_MEMBERS);
+    setSystemUsers(DEMO_SYSTEM_USERS);
+    setRoomConflicts(DEMO_ROOM_CONFLICTS);
+    setStudyMaterials(DEMO_COURSE_MATERIALS);
+    setTimetableEntries(DEMO_TIMETABLE_ENTRIES);
+    setCourseMaterials(DEMO_COURSE_MATERIALS);
+    setRevaluationRequests(DEMO_REVALUATION_REQUESTS);
+    setFeeConcessions(DEMO_FEE_CONCESSIONS);
+    setAnnouncements(DEMO_ANNOUNCEMENTS);
+    setPrograms(DEMO_PROGRAMS);
+    setClassSections(DEMO_CLASS_SECTIONS);
+    setCoursesMaster(DEMO_COURSES_MASTER);
+    setAcademicYears(DEMO_ACADEMIC_YEARS);
+
+    broadcastSync('SYNC_RESET_DEMO', { resetAt: Date.now() });
+    showToast('Demo environment reset to baseline fictional dataset ✓', 'success');
+  };
 
   // WORKFLOW 1: ATTENDANCE
   // Faculty marks Attendance -> Student + HOD + Principal updates
@@ -3011,6 +3097,8 @@ export function NivaraProvider({ children }) {
         toggleTheme,
         isOffline,
         setIsOffline,
+        isDemoMode: true,
+        resetDemoData,
         isDataLoading,
         dataFetchError,
         activeTab,

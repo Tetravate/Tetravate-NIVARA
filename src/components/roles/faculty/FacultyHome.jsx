@@ -8,7 +8,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useNivara } from '../../../context/NivaraContext';
-import { PageHeader, SectionHeader } from '../../workspace';
+import { PageHeader, SectionHeader, MetricStrip } from '../../workspace';
 
 export default function FacultyHome() {
   const {
@@ -62,6 +62,33 @@ export default function FacultyHome() {
     (s) => s.deptCode === 'AIDS' && s.attendancePct < 75
   );
 
+  const facultyMetrics = [
+    {
+      label: "Today's Teaching",
+      value: `${todaySessions.length} Sessions`,
+      subtext: liveSession ? 'Lecture in progress' : 'Scheduled Autumn 2026',
+      state: 'info',
+    },
+    {
+      label: 'Classroom Roll Call',
+      value: `${presentCount} Present`,
+      subtext: `${absentCount} absent in session`,
+      state: absentCount > 5 ? 'warning' : 'success',
+    },
+    {
+      label: 'Submissions to Grade',
+      value: `${totalSubmissionsToGrade} to Evaluate`,
+      subtext: `${pendingGradingAssignments.length} deliverable batches`,
+      state: totalSubmissionsToGrade > 0 ? 'warning' : 'success',
+    },
+    {
+      label: 'Duty Leave Endorsements',
+      value: `${pendingLeaves.length} Requests`,
+      subtext: pendingLeaves.length === 0 ? 'All endorsements current' : 'Requires faculty review',
+      state: pendingLeaves.length > 0 ? 'urgent' : 'success',
+    },
+  ];
+
   return (
     <div className="workspace-dense" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* 1. Page Header (Concise & Operational) */}
@@ -89,7 +116,10 @@ export default function FacultyHome() {
         ]}
       />
 
-      {/* 2. Operational 2-Column Split */}
+      {/* 2. Key Operational Metrics */}
+      <MetricStrip metrics={facultyMetrics} />
+
+      {/* 3. Operational 2-Column Split */}
       <div className="split-panel" style={{ gridTemplateColumns: '1.45fr 1.15fr', gap: '1.25rem' }}>
         {/* LEFT COLUMN: TODAY & ACTIVE SESSION */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

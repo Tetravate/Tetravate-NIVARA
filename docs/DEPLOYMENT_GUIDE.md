@@ -85,15 +85,32 @@ Nivara operates in dual-mode:
 ## 5. Deploying to Production Hosting
 
 ### A. Deploy to Vercel (Recommended)
+
+Nivara includes a dedicated `vercel.json` configuration file with:
+- **SPA Routing rewrites**: Direct page reloads or subpaths route smoothly to `/index.html`.
+- **Immutable Static Asset Caching**: 1-year browser and edge CDN caching for `/assets/*` bundles.
+- **Security Headers**: Production HTTP security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
+
+#### Method 1: Deploy via Vercel Web Dashboard (Git Integration)
 1. Push your repository to GitHub / GitLab / Bitbucket.
-2. Import the repository in [Vercel](https://vercel.com).
-3. Framework Preset: **Vite**
-4. Build Command: `npm run build`
-5. Output Directory: `dist`
-6. (Optional) Add your environment variables:
+2. Import the repository in [Vercel Dashboard](https://vercel.com/new).
+3. Framework Preset: **Vite** (auto-detected).
+4. Build Command: `npm run build` (auto-detected).
+5. Output Directory: `dist` (auto-detected).
+6. In **Environment Variables**, configure:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
 7. Click **Deploy**.
+
+#### Method 2: Deploy via Vercel CLI
+```bash
+# Preview deployment
+npx vercel
+
+# Production deployment
+npx vercel --prod
+```
 
 ### B. Deploy to Netlify
 1. Connect your repository in [Netlify](https://netlify.com).

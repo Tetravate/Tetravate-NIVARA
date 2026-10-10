@@ -5,11 +5,23 @@
  */
 import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
 
+export const ROLE_LABELS = {
+  student: 'Student',
+  faculty: 'Faculty',
+  hod: 'HOD',
+  principal: 'Principal / Dean',
+  admin: 'ERP Administrator',
+  exam_cell: 'Exam Cell',
+  finance: 'Finance & Accounts',
+  placement: 'Placement Officer',
+};
+
 export const INSTITUTIONAL_ACCOUNTS = [
   {
     email: 'student@nivara.edu',
     password: 'Password@123',
     role: 'student',
+    label: 'Student',
     userName: 'Aadhi Narayanan',
     title: 'B.Tech AI & Data Science (III Year)',
     dept: 'AI & Data Science',
@@ -21,6 +33,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'faculty@nivara.edu',
     password: 'Password@123',
     role: 'faculty',
+    label: 'Faculty',
     userName: 'Dr. Priya Raman',
     title: 'Associate Professor, CS & AI',
     dept: 'Computer Science & AI',
@@ -32,6 +45,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'hod@nivara.edu',
     password: 'Password@123',
     role: 'hod',
+    label: 'HOD',
     userName: 'Dr. K. Mohan',
     title: 'Head of Department, AI & DS',
     dept: 'AI & Data Science',
@@ -43,6 +57,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'principal@nivara.edu',
     password: 'Password@123',
     role: 'principal',
+    label: 'Principal / Dean',
     userName: 'Dr. Aris Thorne',
     title: 'Principal & Academic Dean',
     dept: 'Executive Directorate',
@@ -53,6 +68,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'admin@nivara.edu',
     password: 'Password@123',
     role: 'admin',
+    label: 'ERP Administrator',
     userName: 'System Controller',
     title: 'Chief Information Officer & ERP Administrator',
     dept: 'Campus Information Systems',
@@ -63,6 +79,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'examcell@nivara.edu',
     password: 'Password@123',
     role: 'exam_cell',
+    label: 'Exam Cell',
     userName: 'Prof. V. Ramanathan',
     title: 'Controller of Examinations',
     dept: 'Office of the Controller of Examinations',
@@ -73,6 +90,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'finance@nivara.edu',
     password: 'Password@123',
     role: 'finance',
+    label: 'Finance & Accounts',
     userName: 'Mrs. S. Mythili',
     title: 'Bursar & Chief Accounts Officer',
     dept: 'Finance & Treasury Wing',
@@ -83,6 +101,7 @@ export const INSTITUTIONAL_ACCOUNTS = [
     email: 'placement@nivara.edu',
     password: 'Password@123',
     role: 'placement',
+    label: 'Placement Officer',
     userName: 'Dr. S. Kapoor',
     title: 'Dean of Corporate Relations & Placement',
     dept: 'Career Development Center',
@@ -123,12 +142,14 @@ export async function loginWithCredentials(email, password, remember = true) {
         throw new Error('User profile record not found. Please contact ERP Administrator.');
       }
 
+      const roleKey = profile.role || 'student';
       const sessionObj = {
         token: data.session.access_token,
         user: {
           id: data.user.id,
           email: data.user.email,
-          role: profile.role,
+          role: roleKey,
+          label: profile.label || ROLE_LABELS[roleKey] || 'Student',
           userName: profile.full_name,
           title: profile.title,
           dept: profile.department,
@@ -183,6 +204,7 @@ export async function loginWithCredentials(email, password, remember = true) {
       id: `usr-${matchedAccount.role}`,
       email: matchedAccount.email,
       role: matchedAccount.role,
+      label: matchedAccount.label || ROLE_LABELS[matchedAccount.role] || 'Student',
       userName: matchedAccount.userName,
       title: matchedAccount.title,
       dept: matchedAccount.dept,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Moon, Sun, Check, X } from 'lucide-react';
+import { Settings, Moon, Sun, Check, X, RotateCcw } from 'lucide-react';
 import { useNivara } from '../context/NivaraContext';
 
 export default function AccountSettingsModal() {
@@ -10,6 +10,7 @@ export default function AccountSettingsModal() {
     toggleTheme,
     isOffline,
     setIsOffline,
+    resetDemoData,
     showToast,
   } = useNivara();
 
@@ -152,6 +153,36 @@ export default function AccountSettingsModal() {
                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
             </label>
+          </div>
+
+          {/* Demo Environment Controls */}
+          <div>
+            <div style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+              Portfolio Demo Environment
+            </div>
+            <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                This portfolio demonstration operates in an isolated environment with synthetic institutional records. Real institutional databases and private credentials are never accessed.
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Reset Baseline Dataset
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Reset all demo data back to the initial baseline? Any simulated changes from your session will be restored.')) {
+                      resetDemoData();
+                    }
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ gap: '0.35rem', fontSize: '0.75rem' }}
+                >
+                  <RotateCcw size={13} color="var(--brand-blue)" />
+                  Reset Demo Data
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Sync Frequency */}

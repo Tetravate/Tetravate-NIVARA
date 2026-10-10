@@ -10,7 +10,8 @@ export default function MetricStrip({ metrics = [] }) {
   return (
     <div className="metric-strip" role="region" aria-label="Key operational indicators">
       {metrics.map((item, idx) => {
-        const statusClass = item.status ? `metric-tile-${item.status}` : '';
+        const status = item.state || item.status;
+        const statusClass = status ? `metric-tile-${status}` : '';
         return (
           <div key={item.id || idx} className={`metric-tile ${statusClass}`}>
             <div className="metric-tile-header">

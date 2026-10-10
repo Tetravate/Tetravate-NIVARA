@@ -28,6 +28,17 @@ export default function ExamTimeline({ onBack }) {
   const totalExams = (examSessions || []).length;
   const nextExam = examSessions && examSessions.length > 0 ? examSessions[0] : null;
 
+  const getExamDays = (ex) => {
+    if (typeof ex?.daysRemaining === 'number') return ex.daysRemaining;
+    const targetDate = ex?.exam_date || ex?.date;
+    if (!targetDate) return 28;
+    const diff = Math.ceil((new Date(targetDate) - new Date('2026-10-07')) / 86400000);
+    return diff > 0 ? diff : 28;
+  };
+
+  const nextExamDays = nextExam ? getExamDays(nextExam) : null;
+  const nextExamDateFormatted = nextExam?.dateFormatted || nextExam?.date || '04 Nov 2026';
+
   const examMetrics = [
     {
       label: 'Scheduled Assessments',
@@ -37,8 +48,8 @@ export default function ExamTimeline({ onBack }) {
     },
     {
       label: 'Next Examination',
-      value: nextExam ? `In ${nextExam.daysRemaining} Days` : 'None',
-      subtext: nextExam ? `${nextExam.code} · ${nextExam.dateFormatted}` : 'No upcoming papers',
+      value: nextExam ? `In ${nextExamDays} Days` : 'None',
+      subtext: nextExam ? `${nextExam.code || nextExam.subject_code} · ${nextExamDateFormatted}` : 'No upcoming papers',
       state: nextExam ? 'warning' : 'neutral',
     },
     {
@@ -139,7 +150,7 @@ export default function ExamTimeline({ onBack }) {
                           </span>
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                          In <strong>{exam.daysRemaining} days</strong> · Seating: <strong>{exam.seatingSeat}</strong>
+                          In <strong>{getExamDays(exam)} days</strong> · Seating: <strong>{exam.seatingSeat || `${exam.seat_prefix || 'CEH'}-${student?.rollNo?.slice(-3) || '042'}`}</strong>
                         </div>
                       </div>
                     </div>

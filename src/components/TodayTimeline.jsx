@@ -76,11 +76,13 @@ export default function TodayTimeline({ onBack }) {
   if (dayClasses.length > 0 && !isHolidayMode && selectedDay !== 'Saturday') {
     dayClasses.forEach((cls, idx) => {
       // Determine session state relative to current simulated time (10:15 AM on Tuesday)
+      const start = cls.startTime || cls.start_time || '';
+      const end = cls.endTime || cls.end_time || '';
       let status = 'upcoming';
       if (selectedDay === 'Tuesday') {
-        if (cls.startTime < '10:00:00') {
+        if (start && start < '10:00:00') {
           status = 'attended';
-        } else if (cls.startTime <= '10:30:00' && cls.endTime >= '10:00:00') {
+        } else if (start && end && start <= '10:30:00' && end >= '10:00:00') {
           status = 'in-progress';
         }
       } else if (selectedDay === 'Monday') {
@@ -89,13 +91,13 @@ export default function TodayTimeline({ onBack }) {
 
       enrichedStream.push({
         id: cls.id,
-        time: cls.timeSlot,
-        timeShort: cls.startTime ? cls.startTime.substring(0, 5) : '10:00',
-        subject: cls.subjectName,
-        code: cls.courseCode,
+        time: cls.timeSlot || cls.time_slot,
+        timeShort: start ? start.substring(0, 5) : '10:00',
+        subject: cls.subjectName || cls.subject_name || cls.subject,
+        code: cls.courseCode || cls.course_code || cls.code,
         room: cls.room,
-        instructor: cls.facultyName,
-        isLab: cls.isLab,
+        instructor: cls.facultyName || cls.faculty_name || cls.faculty,
+        isLab: Boolean(cls.isLab || cls.is_lab),
         status,
       });
 

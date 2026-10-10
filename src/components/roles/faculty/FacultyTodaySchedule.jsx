@@ -49,11 +49,13 @@ export default function FacultyTodaySchedule({ onBack }) {
 
   if (daySessions.length > 0 && !isHolidayMode && selectedDay !== 'Saturday') {
     daySessions.forEach((cls, idx) => {
+      const start = cls.startTime || cls.start_time || '';
+      const end = cls.endTime || cls.end_time || '';
       let status = 'upcoming';
       if (selectedDay === 'Tuesday') {
-        if (cls.startTime < '10:00:00') {
+        if (start && start < '10:00:00') {
           status = 'conducted';
-        } else if (cls.startTime <= '10:30:00' && cls.endTime >= '10:00:00') {
+        } else if (start && end && start <= '10:30:00' && end >= '10:00:00') {
           status = 'in-progress';
         }
       } else if (selectedDay === 'Monday') {
@@ -62,13 +64,13 @@ export default function FacultyTodaySchedule({ onBack }) {
 
       stream.push({
         id: cls.id,
-        time: cls.timeSlot,
-        timeShort: cls.startTime ? cls.startTime.substring(0, 5) : '10:00',
-        subject: cls.subjectName,
-        code: cls.courseCode,
-        section: cls.sectionCode || 'AIDS-A (Sem 5)',
+        time: cls.timeSlot || cls.time_slot,
+        timeShort: start ? start.substring(0, 5) : '10:00',
+        subject: cls.subjectName || cls.subject_name || cls.subject,
+        code: cls.courseCode || cls.course_code || cls.code,
+        section: cls.sectionCode || cls.section_code || 'AIDS-3A (Sem 5)',
         room: cls.room,
-        isLab: cls.isLab,
+        isLab: Boolean(cls.isLab || cls.is_lab),
         status,
       });
 

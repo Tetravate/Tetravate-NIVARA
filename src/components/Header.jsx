@@ -13,8 +13,10 @@ import {
   LogOut,
   Clock,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { useNivara } from '../context/NivaraContext';
+import { INSTITUTIONAL_ACCOUNTS } from '../services/authService';
 
 export default function Header({ onOpenCaseStudy }) {
   const {
@@ -22,6 +24,7 @@ export default function Header({ onOpenCaseStudy }) {
     switchRole,
     currentUser,
     logout,
+    resetDemoData,
     ROLES,
     theme,
     toggleTheme,
@@ -61,7 +64,14 @@ export default function Header({ onOpenCaseStudy }) {
         <div>
           <span className="brand-name">NIVARA</span>
         </div>
-        <span className="brand-badge">Synchronized OS</span>
+        <span
+          className="brand-badge"
+          title="Isolated portfolio demo environment with fictional academic data"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--state-success, #10B981)', display: 'inline-block' }} />
+          Portfolio Demo Mode
+        </span>
       </div>
 
       {/* Omnibar Search Trigger */}
@@ -78,6 +88,23 @@ export default function Header({ onOpenCaseStudy }) {
 
       {/* Controls & Role Selector */}
       <div className="header-actions">
+        {/* Reset Demo Data Action Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('Reset all demo data back to the pristine baseline? Any simulated changes from your session will be restored.')) {
+              resetDemoData();
+            }
+          }}
+          className="btn btn-secondary btn-sm"
+          title="Restore original fictional sample dataset"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', height: '32px' }}
+          id="btn-reset-demo"
+        >
+          <RotateCcw size={13} color="var(--brand-blue)" />
+          <span style={{ fontWeight: 600 }}>Reset Demo</span>
+        </button>
+
         {/* Verifiable Synchronized Audit Trail button */}
         <button
           type="button"
@@ -160,9 +187,34 @@ export default function Header({ onOpenCaseStudy }) {
             aria-label="Open user profile and perspective menu"
           >
             <img src={currentUser?.avatar || ''} alt="" className="role-avatar" />
-            <div className="role-pill-info" style={{ textAlign: 'left', lineHeight: 1.1 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{currentUser?.label || 'Student'}</div>
-              <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>{(currentUser?.userName || 'User').split(' ')[0]}</div>
+            <div className="role-pill-info" style={{ textAlign: 'left', lineHeight: 1.15 }}>
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '140px',
+                }}
+                title={currentUser?.userName || 'User'}
+              >
+                {currentUser?.userName || 'User'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.625rem',
+                  color: 'var(--brand-blue)',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '140px',
+                }}
+              >
+                {currentUser?.label || 'Student'}
+              </div>
             </div>
             <ChevronDown size={13} color="var(--text-muted)" />
           </button>
@@ -271,6 +323,93 @@ export default function Header({ onOpenCaseStudy }) {
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '0.35rem 0' }} />
+
+                {/* 8-Role Perspective Switcher */}
+                <div style={{ marginBottom: '0.4rem' }}>
+                  <div style={{
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-tertiary)',
+                    padding: '0.35rem 0.65rem 0.25rem',
+                  }}>
+                    Switch Perspective (8 Roles)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', maxHeight: '180px', overflowY: 'auto' }}>
+                    {INSTITUTIONAL_ACCOUNTS.map((acc) => {
+                      const isCurrent = currentRole === acc.role;
+                      return (
+                        <button
+                          key={acc.role}
+                          type="button"
+                          onClick={() => {
+                            switchRole(acc.role);
+                            setRoleDropdownOpen(false);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: 'var(--radius-xs)',
+                            background: isCurrent ? 'var(--bg-subtle-2)' : 'transparent',
+                            border: 'none',
+                            color: isCurrent ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            fontSize: '0.75rem',
+                            fontWeight: isCurrent ? 700 : 500,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                          }}
+                        >
+                          <img
+                            src={acc.avatar}
+                            alt=""
+                            style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                          <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {acc.userName} ({acc.role.toUpperCase()})
+                          </span>
+                          {isCurrent && <Check size={12} color="var(--brand-primary)" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '0.35rem 0' }} />
+
+                {/* Reset Demo Data Action */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRoleDropdownOpen(false);
+                    if (window.confirm('Reset all demo data back to the original baseline? Any simulated changes from your session will be restored.')) {
+                      resetDemoData();
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    padding: '0.45rem 0.65rem',
+                    borderRadius: 'var(--radius-xs)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--brand-blue)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    marginBottom: '0.2rem',
+                  }}
+                  title="Restore initial fictional dataset"
+                >
+                  <RotateCcw size={14} />
+                  <span>Reset Demo Data</span>
+                </button>
 
                 {/* Sign Out Action */}
                 <button

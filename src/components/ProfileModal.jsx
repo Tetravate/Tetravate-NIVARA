@@ -185,7 +185,7 @@ export default function ProfileModal() {
           <div style={{ padding: '0.65rem', background: 'var(--bg-canvas)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>System Identifier</div>
             <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
-              {isStudent ? currentStudent.id : `FAC-ENG-${currentUser.label.slice(0, 3).toUpperCase()}`}
+              {isStudent ? currentStudent.id : `FAC-ENG-${(currentUser?.label || 'FAC').slice(0, 3).toUpperCase()}`}
             </div>
           </div>
 

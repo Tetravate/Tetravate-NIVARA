@@ -5,7 +5,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  ShieldCheck,
   AlertCircle,
   CheckCircle2,
   X,
@@ -349,26 +348,12 @@ export default function LoginPage({ onLoginSuccess }) {
           border: '1px dashed var(--border-strong)',
         }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.6875rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--text-secondary)',
-            marginBottom: '0.5rem',
-          }}>
-            <ShieldCheck size={14} color="var(--brand-blue)" />
-            <span>Development Testing Credentials (1-Click Fill)</span>
-          </div>
-          <div style={{
             fontSize: '0.75rem',
             color: 'var(--text-muted)',
             marginBottom: '0.75rem',
             lineHeight: 1.4,
           }}>
-            Click any institutional role below to populate credentials and test role resolution:
+            Explore the populated ERP across all 8 institutional personas with simulated data. Click any role below:
           </div>
 
           <div
